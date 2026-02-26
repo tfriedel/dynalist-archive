@@ -5,7 +5,12 @@ description = "Dynalist Export"
 readme = "README.md"
 authors = [{ name = "Thomas Friedel", email = "thomas.friedel@gmail.com" }]
 requires-python = ">=3.13"
-dependencies = ["loguru>=0.7.0"]
+dependencies = [
+    "requests>=2.32.5",
+]
+
+[project.scripts]
+dynalist-backup = "dynalist_export.cli:main"
 
 [build-system]
 requires = ["hatchling", "uv-dynamic-versioning"]
