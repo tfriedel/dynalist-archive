@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:copier.readthedocs.io)",
+      "Bash(gh repo clone:*)",
+      "Bash(git add:*)",
+      "WebFetch(domain:apidocs.dynalist.io)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
