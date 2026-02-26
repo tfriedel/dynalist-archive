@@ -46,11 +46,63 @@ just ci              # Full CI pipeline
 
 ## Test-Driven Development (TDD)
 
-- **ONE TEST AT A TIME**: Write failing test (RED) → minimal implementation (GREEN) → refactor (REFACTOR)
-- **FAIL FIRST**: Always run the new test to confirm it fails before writing implementation
-- **NO BULK TESTS**: TDD Guard blocks adding 4+ tests at once
+### The TDD Mindset
+
+- **Red-Green-Refactor cycle**: Write failing test → Make it pass → Improve the code
+- **Tests define behavior**: Each test documents a specific business requirement
+- **Design emergence**: Let the tests guide you to discover the right abstractions
+- **Refactor when valuable**: Actively and frequently look for opportunities to make meaningful refactorings
+
+### Critical TDD Rules
+
+- **ONE TEST AT A TIME**: Add only a single test, see it fail (RED), implement minimal code to pass (GREEN), refactor (REFACTOR), repeat
+- **MINIMAL IMPLEMENTATION**: Fix only the immediate test failure - do not implement complete functionality until tests demand it
+- **NO BULK TEST ADDITION**: Never add multiple tests simultaneously - TDD Guard will block this
+- **FAIL FIRST**: Always run the new test to confirm it fails before writing implementation code
+- **INCREMENTAL PROGRESS**: Each test should drive one small increment of functionality
+
+### Refactoring Triggers
+
+After each green test, look for:
+
+- **Duplication to extract**: Shared logic that can be centralized
+- **Complex expressions to simplify**: Break down complicated logic into clear steps
+- **Emerging patterns**: Abstractions suggested by repeated structures
+- **Better names**: Clarify intent through descriptive naming
+- **Code smells to eliminate**:
+  - Logic crammed together without clear purpose
+  - Mixed concerns (business logic, calculations, data handling in one place)
+  - Hard-coded values that should be configurable
+  - Similar operations repeated inline instead of abstracted
+  - High coupling between components
+  - Poor extensibility requiring core logic changes
+
+### Testing Best Practices
+
 - Framework: `uv run --frozen pytest`
-- New features require tests; bug fixes require regression tests
+- **Shared code reuse**: Import shared logic from production code, never duplicate in tests
+- **Test data factories**: Create functions that generate test data with sensible defaults
+- **Business-focused tests**: Test names describe business value, not technical details
+- Coverage: test edge cases and errors
+- New features require tests
+- Bug fixes require regression tests
+
+### Common TDD Violations to Avoid
+
+- Adding 4+ tests at once (blocked by TDD Guard)
+- Over-implementing when test only needs imports or basic structure
+- Writing implementation code before seeing test fail
+- Implementing features not yet demanded by tests
+
+### TDD Development Cycle
+
+1. Write ONE test that fails (RED)
+2. Run test to confirm failure: `uv run --frozen pytest path/to/test.py::test_name -v`
+3. Write minimal code to make test pass (GREEN)
+4. Run test to confirm it passes
+5. Refactor if needed while keeping tests green (REFACTOR)
+6. Run `just lint` to catch issues like unused imports
+7. Repeat with next single test
 
 ## Version Control
 
