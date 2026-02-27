@@ -9,10 +9,11 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from loguru import logger
 from mcp.server.fastmcp import Context, FastMCP
+from mcp.types import ToolAnnotations
 
 from dynalist_archive.config import resolve_data_directory
 from dynalist_archive.core.auto_update import maybe_auto_update
@@ -23,6 +24,18 @@ from dynalist_archive.core.tree.navigation import get_breadcrumbs, get_children,
 
 _DEFAULT_SOURCE_DIR = resolve_data_directory()
 _DEFAULT_DATA_DIR = Path("~/.local/share/dynalist-archive").expanduser()
+
+_READ_ONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False)
+_WRITE = ToolAnnotations(readOnlyHint=False, destructiveHint=True)
+
+_DOC_NOT_FOUND = (
+    "Document '{}' not found."
+    " Use dynalist_list_documents to see available names."
+)
+_NODE_NOT_FOUND = (
+    "Node '{}' not found."
+    " Use dynalist_search to find valid node IDs."
+)
 
 
 def _build_url(document_id: str, node_id: str | None = None) -> str:
@@ -58,7 +71,9 @@ def dynalist_search(
     include_breadcrumbs: bool = True,
     limit: int = 20,
     offset: int = 0,
-    response_format: str = "concise",
+    response_format: Literal["concise", "detailed"] = "concise",
+    subtree_depth: int = 3,
+    include_notes: bool = True,
 ) -> dict[str, Any]:
     """Search archived Dynalist nodes using full-text search.
 
@@ -75,9 +90,16 @@ def dynalist_search(
         limit: Max results (1-50, default 20).
         offset: Pagination offset.
         response_format: "concise" or "detailed".
+        subtree_depth: Include N levels of children per result (0 = off).
+        include_notes: Include notes in subtree output.
     """
     if not query.strip():
-        return {"error": "No search query provided.", "results": [], "count": 0, "total": 0}
+        return {
+            "error": "No search query provided. Pass a query string to search nodes.",
+            "results": [],
+            "count": 0,
+            "total": 0,
+        }
 
     limit = max(1, min(limit, 50))
 
@@ -86,7 +108,7 @@ def dynalist_search(
         doc_id = _resolve_document(conn, document)
         if not doc_id:
             return {
-                "error": f"Document '{document}' not found.",
+                "error": _DOC_NOT_FOUND.format(document),
                 "results": [],
                 "count": 0,
                 "total": 0,
@@ -102,7 +124,10 @@ def dynalist_search(
             below_path = row[0]
         else:
             return {
-                "error": f"Node '{below_node}' not found.",
+                "error": (
+                    f"Node '{below_node}' not found."
+                    " Verify the node_id from a previous search result."
+                ),
                 "results": [],
                 "count": 0,
                 "total": 0,
@@ -133,6 +158,16 @@ def dynalist_search(
             entry["depth"] = r.node.depth
         if include_breadcrumbs:
             entry["breadcrumbs"] = _breadcrumbs_str(conn, r.node.document_id, r.node.path)
+        if subtree_depth > 0:
+            md = render_subtree_as_markdown(
+                conn,
+                document_id=r.node.document_id,
+                node_id=r.node.id,
+                max_depth=subtree_depth,
+                include_notes=include_notes,
+            )
+            entry["subtree"] = md
+            entry["subtree_estimated_tokens"] = len(md) // 4
         serialized.append(entry)
 
     output: dict[str, Any] = {
@@ -143,6 +178,14 @@ def dynalist_search(
     }
     if output["has_more"]:
         output["next_offset"] = offset + limit
+    if subtree_depth > 0:
+        total_tokens = sum(e.get("subtree_estimated_tokens", 0) for e in serialized)
+        output["total_estimated_tokens"] = total_tokens
+        if total_tokens > 8000:
+            output["warning"] = (
+                f"Large response (~{total_tokens} tokens). "
+                "Consider reducing limit or subtree_depth."
+            )
     return output
 
 
@@ -174,7 +217,7 @@ def dynalist_read_node(
     node_id: str,
     document: str | None = None,
     max_depth: int | None = None,
-    output_format: str = "markdown",
+    response_format: Literal["markdown", "json"] = "markdown",
     include_notes: bool = True,
 ) -> dict[str, Any]:
     """Read a node and its subtree as markdown or structured JSON.
@@ -183,17 +226,17 @@ def dynalist_read_node(
         node_id: Node ID to read.
         document: Document title/filename/file_id (needed if ambiguous).
         max_depth: Max depth levels to include (None = unlimited).
-        output_format: "markdown" or "json".
+        response_format: "markdown" or "json".
         include_notes: Include node notes in output.
     """
     if document:
         doc_id = _resolve_document(conn, document)
         if not doc_id:
-            return {"error": f"Document '{document}' not found."}
+            return {"error": _DOC_NOT_FOUND.format(document)}
     else:
         row = conn.execute("SELECT document_id FROM nodes WHERE id = ?", (node_id,)).fetchone()
         if not row:
-            return {"error": f"Node '{node_id}' not found."}
+            return {"error": _NODE_NOT_FOUND.format(node_id)}
         doc_id = row[0]
 
     node_row = conn.execute(
@@ -201,12 +244,18 @@ def dynalist_read_node(
         (doc_id, node_id),
     ).fetchone()
     if not node_row:
-        return {"error": f"Node '{node_id}' not found in document."}
+        return {
+            "error": (
+                f"Node '{node_id}' not found in document."
+                " It may be in a different document"
+                " — try without the document parameter."
+            ),
+        }
 
     path, content, _depth = node_row
     breadcrumbs = _breadcrumbs_str(conn, doc_id, path)
 
-    if output_format == "markdown":
+    if response_format == "markdown":
         md = render_subtree_as_markdown(
             conn,
             document_id=doc_id,
@@ -280,7 +329,11 @@ def dynalist_get_recent_changes(
     if document:
         doc_id = _resolve_document(conn, document)
         if not doc_id:
-            return {"error": f"Document '{document}' not found.", "results": [], "count": 0}
+            return {
+                "error": _DOC_NOT_FOUND.format(document),
+                "results": [],
+                "count": 0,
+            }
         where_parts.append("n.document_id = ?")
         params.append(doc_id)
 
@@ -349,11 +402,11 @@ def dynalist_get_node_context(
     if document:
         doc_id = _resolve_document(conn, document)
         if not doc_id:
-            return {"error": f"Document '{document}' not found."}
+            return {"error": _DOC_NOT_FOUND.format(document)}
     else:
         row = conn.execute("SELECT document_id FROM nodes WHERE id = ?", (node_id,)).fetchone()
         if not row:
-            return {"error": f"Node '{node_id}' not found."}
+            return {"error": _NODE_NOT_FOUND.format(node_id)}
         doc_id = row[0]
 
     node_row = conn.execute(
@@ -363,7 +416,12 @@ def dynalist_get_node_context(
         (doc_id, node_id),
     ).fetchone()
     if not node_row:
-        return {"error": f"Node '{node_id}' not found."}
+        return {
+            "error": (
+                f"Node '{node_id}' not found in the specified document."
+                " Try without the document parameter."
+            ),
+        }
 
     path = node_row[9]
     parent_id = node_row[2]
@@ -421,7 +479,7 @@ def dynalist_edit_node(
     """
     doc_id = _resolve_document(conn, document)
     if not doc_id:
-        return {"error": f"Document '{document}' not found."}
+        return {"error": _DOC_NOT_FOUND.format(document)}
 
     from dynalist_archive.api import DynalistApi
     from dynalist_archive.core.write.client import edit_node
@@ -463,7 +521,7 @@ def dynalist_add_node(
     """
     doc_id = _resolve_document(conn, document)
     if not doc_id:
-        return {"error": f"Document '{document}' not found."}
+        return {"error": _DOC_NOT_FOUND.format(document)}
 
     from dynalist_archive.api import DynalistApi
     from dynalist_archive.core.write.client import add_node
@@ -546,24 +604,19 @@ async def server_lifespan(_server: FastMCP) -> AsyncIterator[ServerContext]:
 mcp_server = FastMCP(
     "dynalist-archive",
     instructions="""\
-Dynalist is a tree-structured outliner. Search results show matching nodes, but
-the real content is usually in the **children** underneath them.
+Dynalist is a tree-structured outliner. Nodes contain text and may have
+children nested beneath them.
 
-## Best Practice: Always Read Subtrees After Searching
+## Recommended Workflow
 
-1. Search with dynalist_search_tool to find relevant nodes.
-2. For EACH interesting result, call dynalist_read_node_tool with its node_id
-   to retrieve the full subtree (children, grandchildren, etc.).
-3. Use max_depth=2 or 3 for large subtrees to avoid overwhelming output.
-
-Search results only contain the matched node's content — they do NOT include
-children. A node titled "monorepo" may have 10 child links and notes that only
-appear when you read its subtree.
+1. Search with dynalist_search — results include subtrees by default
+   (3 levels of children). This is usually all you need.
+2. If you need deeper content, call dynalist_read_node on specific nodes.
+3. Use dynalist_get_node_context to see a node's position (siblings, breadcrumbs).
 
 ## Tips
-- Read multiple search results, not just the first one.
-- Use dynalist_get_node_context_tool to see siblings and position in the tree.
 - Breadcrumbs show the ancestor path (e.g. "peat > archive > monorepo").
+- Use dynalist_list_documents to discover document names for filtering.
 """,
     lifespan=server_lifespan,
 )
@@ -587,7 +640,7 @@ async def _auto_update(ctx: ServerContext) -> None:
 # --- MCP Tool Wrappers ---
 
 
-@mcp_server.tool()
+@mcp_server.tool(name="dynalist_search", annotations=_READ_ONLY)
 async def dynalist_search_tool(
     ctx: Context,
     query: str = "",
@@ -596,21 +649,19 @@ async def dynalist_search_tool(
     include_breadcrumbs: bool = True,
     limit: int = 20,
     offset: int = 0,
-    response_format: str = "concise",
+    response_format: Literal["concise", "detailed"] = "concise",
+    subtree_depth: int = 3,
+    include_notes: bool = True,
 ) -> dict[str, Any]:
     """Search archived Dynalist nodes using full-text search.
 
-    Returns nodes matching the query. Query syntax: Words are ANDed.
-    Use "quoted phrases" for exact matches. Prefix matching is automatic
-    for 3+ char words.
+    Returns nodes matching the query with their subtrees included by default.
+    Query syntax: Words are ANDed. Use "quoted phrases" for exact matches.
+    Prefix matching is automatic for 3+ char words.
 
-    IMPORTANT: Dynalist is a tree-structured outliner. Search results only
-    contain the matched node's own text — child nodes are NOT included.
-    The real content is often in the children underneath a match.
-
-    After searching, call dynalist_read_node_tool for ALL results (not just
-    the first one) to retrieve their full subtrees before answering.
-    Use max_depth=2 or 3 for large subtrees.
+    Each result includes a subtree field with rendered child content (up to
+    subtree_depth levels). Set subtree_depth=0 to disable subtrees and get
+    only the matched node's text.
 
     Pagination: When has_more is true, use next_offset in a follow-up call.
 
@@ -622,6 +673,8 @@ async def dynalist_search_tool(
         limit: Max results (1-50, default 20).
         offset: Pagination offset.
         response_format: "concise" or "detailed".
+        subtree_depth: Levels of children per result (default 3, 0 = off).
+        include_notes: Include notes in subtree output.
     """
     await _auto_update(_ctx(ctx))
     return dynalist_search(
@@ -633,29 +686,33 @@ async def dynalist_search_tool(
         limit=limit,
         offset=offset,
         response_format=response_format,
+        subtree_depth=subtree_depth,
+        include_notes=include_notes,
     )
 
 
-@mcp_server.tool()
+@mcp_server.tool(name="dynalist_read_node", annotations=_READ_ONLY)
 async def dynalist_read_node_tool(
     ctx: Context,
     node_id: str,
     document: str | None = None,
     max_depth: int | None = None,
-    output_format: str = "markdown",
+    response_format: Literal["markdown", "json"] = "markdown",
     include_notes: bool = True,
 ) -> dict[str, Any]:
-    """Read a node and its subtree as markdown or structured JSON.
+    """Read a node's full subtree content as markdown or structured JSON.
 
-    Use this after finding an interesting node via dynalist_search to see
-    its full content. Pass the document's root node with max_depth to get
-    a table of contents.
+    Use this to get the complete content beneath a node. For large subtrees,
+    set max_depth to limit output (e.g., max_depth=2 for two levels).
+
+    This tool is for CONTENT. For STRUCTURE (breadcrumbs, siblings, position
+    in the tree), use dynalist_get_node_context instead.
 
     Args:
         node_id: Node ID to read.
         document: Document title/filename/file_id.
         max_depth: Max depth levels (None = unlimited).
-        output_format: "markdown" (human-readable) or "json" (structured).
+        response_format: "markdown" (human-readable) or "json" (structured).
         include_notes: Include node notes in output.
     """
     await _auto_update(_ctx(ctx))
@@ -664,12 +721,12 @@ async def dynalist_read_node_tool(
         node_id=node_id,
         document=document,
         max_depth=max_depth,
-        output_format=output_format,
+        response_format=response_format,
         include_notes=include_notes,
     )
 
 
-@mcp_server.tool()
+@mcp_server.tool(name="dynalist_list_documents", annotations=_READ_ONLY)
 async def dynalist_list_documents_tool(ctx: Context) -> dict[str, Any]:
     """List all documents in the Dynalist archive with metadata.
 
@@ -679,7 +736,7 @@ async def dynalist_list_documents_tool(ctx: Context) -> dict[str, Any]:
     return dynalist_list_documents(_ctx(ctx).conn)
 
 
-@mcp_server.tool()
+@mcp_server.tool(name="dynalist_get_recent_changes", annotations=_READ_ONLY)
 async def dynalist_get_recent_changes_tool(
     ctx: Context,
     document: str | None = None,
@@ -710,7 +767,7 @@ async def dynalist_get_recent_changes_tool(
     )
 
 
-@mcp_server.tool()
+@mcp_server.tool(name="dynalist_get_node_context", annotations=_READ_ONLY)
 async def dynalist_get_node_context_tool(
     ctx: Context,
     node_id: str,
@@ -718,10 +775,14 @@ async def dynalist_get_node_context_tool(
     sibling_count: int = 3,
     child_limit: int = 20,
 ) -> dict[str, Any]:
-    """Get a node with its surrounding context.
+    """Get a node's structural context: breadcrumbs, siblings, and direct children.
 
-    Returns the node with breadcrumbs (ancestors), siblings, and children.
-    Use this after search to understand a node's position in the tree.
+    Use this to understand WHERE a node sits in the tree. Returns the
+    ancestor path (breadcrumbs), neighboring siblings, and a shallow list
+    of children.
+
+    This tool is for STRUCTURE. For the full CONTENT of a subtree, use
+    dynalist_read_node instead.
 
     Args:
         node_id: Node ID from search results.
@@ -739,7 +800,7 @@ async def dynalist_get_node_context_tool(
     )
 
 
-@mcp_server.tool()
+@mcp_server.tool(name="dynalist_edit_node", annotations=_WRITE)
 async def dynalist_edit_node_tool(
     ctx: Context,
     node_id: str,
@@ -770,7 +831,7 @@ async def dynalist_edit_node_tool(
     )
 
 
-@mcp_server.tool()
+@mcp_server.tool(name="dynalist_add_node", annotations=_WRITE)
 async def dynalist_add_node_tool(
     ctx: Context,
     parent_id: str,
