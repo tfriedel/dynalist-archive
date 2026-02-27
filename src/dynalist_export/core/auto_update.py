@@ -1,4 +1,4 @@
-"""Auto-update logic: sync from Dynalist API before search operations."""
+"""Auto-update logic: re-import changed files from disk before search."""
 
 import sqlite3
 import time
@@ -27,12 +27,17 @@ def is_update_needed(conn: sqlite3.Connection, interval: int) -> bool:
 
 
 def maybe_auto_update(conn: sqlite3.Connection, source_dir: Path) -> None:
-    """Run backup sync + re-import if enough time has elapsed.
+    """Re-import changed .c.json files from disk if cooldown has expired.
 
-    Silently skips if:
-    - The cooldown has not expired
-    - No API token is configured
-    - Any error occurs during sync (logs warning, never blocks search)
+    Does not make API calls; use ``dynalist-backup`` to sync from the
+    Dynalist API to disk first.
+
+    Skips without blocking if:
+    - The cooldown has not expired.
+    - The source directory does not exist.
+
+    On import failure, logs a warning and sets the cooldown to prevent
+    retry storms.
 
     Args:
         conn: SQLite connection for the archive database.
@@ -41,22 +46,14 @@ def maybe_auto_update(conn: sqlite3.Connection, source_dir: Path) -> None:
     if not is_update_needed(conn, AUTO_UPDATE_INTERVAL):
         return
 
-    try:
-        from dynalist_export.api import DynalistApi
-        from dynalist_export.cli import run_backup
-        from dynalist_export.core.importer.loader import import_source_dir
-        from dynalist_export.writer import FileWriter
+    if not source_dir.exists():
+        return
 
-        api = DynalistApi()
-        writer = FileWriter(str(source_dir), dry_run=False)
-        run_backup(writer, api)
+    try:
+        from dynalist_export.core.importer.loader import import_source_dir
+
         import_source_dir(conn, source_dir)
-    except RuntimeError:
-        # No API token configured — read-only mode
-        logger.debug("Auto-update skipped: no API token configured")
-        return
     except Exception:
-        logger.warning("Auto-update failed, continuing with existing data")
-        return
+        logger.warning("Auto-import failed, continuing with existing data", exc_info=True)
 
     set_metadata(conn, "last_update_at", str(int(time.time())))

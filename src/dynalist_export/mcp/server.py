@@ -1,10 +1,12 @@
 """MCP server exposing Dynalist archive search and navigation tools."""
 
+import asyncio
 import os
 import sqlite3
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -14,7 +16,7 @@ from mcp.server.fastmcp import Context, FastMCP
 
 from dynalist_export.config import resolve_data_directory
 from dynalist_export.core.auto_update import maybe_auto_update
-from dynalist_export.core.database.schema import migrate_schema
+from dynalist_export.core.database.schema import get_metadata, migrate_schema, set_metadata
 from dynalist_export.core.search.searcher import search_nodes
 from dynalist_export.core.tree.markdown import render_subtree_as_markdown
 from dynalist_export.core.tree.navigation import get_breadcrumbs, get_children, get_siblings
@@ -492,6 +494,7 @@ class ServerContext:
     conn: sqlite3.Connection
     source_dir: Path | None
     archive_dir: Path
+    auto_update_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
 def _resolve_paths() -> tuple[Path, Path]:
@@ -530,6 +533,11 @@ async def server_lifespan(_server: FastMCP) -> AsyncIterator[ServerContext]:
 
     try:
         _maybe_auto_import(conn, source_dir)
+        # Set initial cooldown if data exists but no timestamp yet,
+        # preventing an unnecessary re-import on the first tool call.
+        has_data = conn.execute("SELECT COUNT(*) FROM documents").fetchone()[0] > 0
+        if has_data and get_metadata(conn, "last_update_at") is None:
+            set_metadata(conn, "last_update_at", str(int(time.time())))
         yield ServerContext(conn=conn, source_dir=source_dir, archive_dir=archive_dir)
     finally:
         conn.close()
@@ -542,9 +550,14 @@ def _ctx(mcp_ctx: Context) -> ServerContext:
     return mcp_ctx.request_context.lifespan_context  # type: ignore[return-value]
 
 
-def _auto_update(ctx: ServerContext) -> None:
-    """Run auto-update if enough time has elapsed."""
-    if ctx.source_dir:
+async def _auto_update(ctx: ServerContext) -> None:
+    """Re-import changed files from disk if cooldown has elapsed.
+
+    Uses a lock to prevent concurrent imports from corrupting the database.
+    """
+    if not ctx.source_dir:
+        return
+    async with ctx.auto_update_lock:
         maybe_auto_update(ctx.conn, ctx.source_dir)
 
 
@@ -582,7 +595,7 @@ async def dynalist_search_tool(
         offset: Pagination offset.
         response_format: "concise" or "detailed".
     """
-    _auto_update(_ctx(ctx))
+    await _auto_update(_ctx(ctx))
     return dynalist_search(
         _ctx(ctx).conn,
         query=query,
@@ -617,7 +630,7 @@ async def dynalist_read_node_tool(
         output_format: "markdown" (human-readable) or "json" (structured).
         include_notes: Include node notes in output.
     """
-    _auto_update(_ctx(ctx))
+    await _auto_update(_ctx(ctx))
     return dynalist_read_node(
         _ctx(ctx).conn,
         node_id=node_id,
@@ -634,7 +647,7 @@ async def dynalist_list_documents_tool(ctx: Context) -> dict[str, Any]:
 
     Use this to discover document names for filtering searches.
     """
-    _auto_update(_ctx(ctx))
+    await _auto_update(_ctx(ctx))
     return dynalist_list_documents(_ctx(ctx).conn)
 
 
@@ -658,7 +671,7 @@ async def dynalist_get_recent_changes_tool(
         offset: Pagination offset.
         include_breadcrumbs: Include ancestor chain.
     """
-    _auto_update(_ctx(ctx))
+    await _auto_update(_ctx(ctx))
     return dynalist_get_recent_changes(
         _ctx(ctx).conn,
         document=document,
@@ -688,7 +701,7 @@ async def dynalist_get_node_context_tool(
         sibling_count: Siblings before/after to include.
         child_limit: Max direct children to show.
     """
-    _auto_update(_ctx(ctx))
+    await _auto_update(_ctx(ctx))
     return dynalist_get_node_context(
         _ctx(ctx).conn,
         node_id=node_id,
