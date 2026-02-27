@@ -226,14 +226,26 @@ def dynalist_read_node(
             )
         return result
 
-    # JSON format
-    children = get_children(conn, document_id=doc_id, parent_id=node_id)
+    # JSON format — recursive tree up to max_depth
+    def _build_children(parent_id: str, remaining_depth: int | None) -> list[dict[str, Any]]:
+        children = get_children(conn, document_id=doc_id, parent_id=parent_id)
+        result_list = []
+        for c in children:
+            entry: dict[str, Any] = {
+                "id": c.id,
+                "content": c.content,
+                "note": c.note,
+                "child_count": c.child_count,
+            }
+            if remaining_depth is None or remaining_depth > 1:
+                next_depth = None if remaining_depth is None else remaining_depth - 1
+                entry["children"] = _build_children(c.id, next_depth)
+            result_list.append(entry)
+        return result_list
+
     return {
         "node": {"id": node_id, "content": content, "path": path},
-        "children": [
-            {"id": c.id, "content": c.content, "note": c.note, "child_count": c.child_count}
-            for c in children
-        ],
+        "children": _build_children(node_id, max_depth),
         "breadcrumbs": breadcrumbs,
         "url": _build_url(doc_id, node_id),
     }
