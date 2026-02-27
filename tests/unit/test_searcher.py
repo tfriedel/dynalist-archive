@@ -2,7 +2,7 @@
 
 import sqlite3
 
-from dynalist_export.core.search.searcher import search_nodes
+from dynalist_archive.core.search.searcher import search_nodes
 
 
 def test_search_finds_matching_content(populated_db: sqlite3.Connection) -> None:

@@ -3,7 +3,7 @@
 import sqlite3
 from unittest.mock import MagicMock
 
-from dynalist_export.core.write.client import add_node, edit_node
+from dynalist_archive.core.write.client import add_node, edit_node
 
 
 def test_edit_node_calls_api_and_returns_success(

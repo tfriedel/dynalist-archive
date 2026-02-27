@@ -15,7 +15,7 @@ DATA_DIRECTORIES: list[Path] = [
     Path("~/.local/share/dynalist-backup").expanduser(),
     Path("~/.dynalist-backup").expanduser(),
     Path("~/.config/dynalist-backup").expanduser(),
-    Path("/tmp/dynalist-export"),
+    Path("/tmp/dynalist-archive"),
 ]
 
 

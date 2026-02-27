@@ -335,7 +335,7 @@ wheels = [
 ]
 
 [[package]]
-name = "dynalist-export"
+name = "dynalist-archive"
 source = { editable = "." }
 dependencies = [
     { name = "loguru" },

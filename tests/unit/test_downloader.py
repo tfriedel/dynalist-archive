@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from dynalist_export.downloader import (
+from dynalist_archive.downloader import (
     Downloader,
     _dict_to_readable,
     _iterate_contents,

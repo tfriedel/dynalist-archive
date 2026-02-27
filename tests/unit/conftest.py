@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from dynalist_export.core.database.schema import create_schema
-from dynalist_export.core.importer.loader import import_source_dir
+from dynalist_archive.core.database.schema import create_schema
+from dynalist_archive.core.importer.loader import import_source_dir
 
 MULTI_DOC_SOURCE = {
     "_raw_filenames.json": [

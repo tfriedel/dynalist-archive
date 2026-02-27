@@ -8,7 +8,7 @@ from typing import Any
 
 import requests
 
-from dynalist_export.config import API_CACHE_PREFIX, API_TOKEN_FILES
+from dynalist_archive.config import API_CACHE_PREFIX, API_TOKEN_FILES
 
 
 class DynalistApi:

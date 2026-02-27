@@ -2,7 +2,7 @@
 
 import pytest
 
-from dynalist_export.models.node import Document
+from dynalist_archive.models.node import Document
 
 
 def test_document_is_frozen() -> None:

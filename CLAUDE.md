@@ -7,7 +7,7 @@ CLI tool to back up Dynalist documents to local files. Syncs incrementally (only
 ## Architecture
 
 ```
-src/dynalist_export/
+src/dynalist_archive/
 ├── config.py       # Constants: token paths, data dirs, cache prefix
 ├── api.py          # DynalistApi — HTTP client with caching
 ├── writer.py       # FileWriter — smart file writer with git commit support

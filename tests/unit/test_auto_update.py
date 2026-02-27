@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from dynalist_export.core.auto_update import is_update_needed, maybe_auto_update, run_auto_backup
-from dynalist_export.core.database.schema import create_schema, get_metadata, set_metadata
+from dynalist_archive.core.auto_update import is_update_needed, maybe_auto_update, run_auto_backup
+from dynalist_archive.core.database.schema import create_schema, get_metadata, set_metadata
 
 
 def _fresh_db() -> sqlite3.Connection:
@@ -64,7 +64,7 @@ def test_maybe_auto_update_imports_from_disk_when_needed(
         attrs = {"documents_imported": 0, "documents_skipped": 0, "nodes_imported": 0}
         return type("S", (), attrs)()
 
-    monkeypatch.setattr("dynalist_export.core.importer.loader.import_source_dir", fake_import)
+    monkeypatch.setattr("dynalist_archive.core.importer.loader.import_source_dir", fake_import)
 
     maybe_auto_update(conn, tmp_path)
 
@@ -89,7 +89,7 @@ def test_maybe_auto_update_sets_cooldown_even_on_import_failure(
     def failing_import(*_args: object, **_kwargs: object) -> None:
         raise OSError("disk read failed")
 
-    monkeypatch.setattr("dynalist_export.core.importer.loader.import_source_dir", failing_import)
+    monkeypatch.setattr("dynalist_archive.core.importer.loader.import_source_dir", failing_import)
 
     maybe_auto_update(conn, tmp_path)
 
@@ -119,9 +119,9 @@ def test_run_auto_backup_fetches_from_api(tmp_path: Path, monkeypatch: pytest.Mo
         def sync_all(self, api: object) -> None:
             calls.append("sync_all")
 
-    monkeypatch.setattr("dynalist_export.core.auto_update.DynalistApi", FakeApi)
-    monkeypatch.setattr("dynalist_export.core.auto_update.FileWriter", FakeWriter)
-    monkeypatch.setattr("dynalist_export.core.auto_update.Downloader", FakeDownloader)
+    monkeypatch.setattr("dynalist_archive.core.auto_update.DynalistApi", FakeApi)
+    monkeypatch.setattr("dynalist_archive.core.auto_update.FileWriter", FakeWriter)
+    monkeypatch.setattr("dynalist_archive.core.auto_update.Downloader", FakeDownloader)
 
     run_auto_backup(tmp_path)
 
@@ -140,7 +140,7 @@ def test_run_auto_backup_handles_missing_token(
     def raise_no_token(*, from_cache: bool = False) -> None:
         raise RuntimeError("Cannot find dynalist token file")
 
-    monkeypatch.setattr("dynalist_export.core.auto_update.DynalistApi", raise_no_token)
+    monkeypatch.setattr("dynalist_archive.core.auto_update.DynalistApi", raise_no_token)
 
     # Should not raise
     run_auto_backup(tmp_path)
@@ -165,9 +165,9 @@ def test_run_auto_backup_handles_api_error(tmp_path: Path, monkeypatch: pytest.M
         def sync_all(self, api: object) -> None:
             raise RuntimeError("API request failed")
 
-    monkeypatch.setattr("dynalist_export.core.auto_update.DynalistApi", FakeApi)
-    monkeypatch.setattr("dynalist_export.core.auto_update.FileWriter", FakeWriter)
-    monkeypatch.setattr("dynalist_export.core.auto_update.Downloader", FakeDownloader)
+    monkeypatch.setattr("dynalist_archive.core.auto_update.DynalistApi", FakeApi)
+    monkeypatch.setattr("dynalist_archive.core.auto_update.FileWriter", FakeWriter)
+    monkeypatch.setattr("dynalist_archive.core.auto_update.Downloader", FakeDownloader)
 
     # Should not raise
     run_auto_backup(tmp_path)
@@ -187,8 +187,8 @@ def test_maybe_auto_update_runs_backup_before_import(
         attrs = {"documents_imported": 0, "documents_skipped": 0, "nodes_imported": 0}
         return type("S", (), attrs)()
 
-    monkeypatch.setattr("dynalist_export.core.auto_update.run_auto_backup", fake_backup)
-    monkeypatch.setattr("dynalist_export.core.importer.loader.import_source_dir", fake_import)
+    monkeypatch.setattr("dynalist_archive.core.auto_update.run_auto_backup", fake_backup)
+    monkeypatch.setattr("dynalist_archive.core.importer.loader.import_source_dir", fake_import)
 
     maybe_auto_update(conn, tmp_path)
 

@@ -9,8 +9,8 @@ from pathlib import Path
 
 from loguru import logger
 
-from dynalist_export.core.importer.json_reader import parse_document_data
-from dynalist_export.models.node import Node
+from dynalist_archive.core.importer.json_reader import parse_document_data
+from dynalist_archive.models.node import Node
 
 
 @dataclass(frozen=True)

@@ -4,6 +4,6 @@ _src_path: gh:tfriedel/python-copier-template
 author_email: thomas.friedel@gmail.com
 author_name: Thomas Friedel
 description: Dynalist Export
-package_name: dynalist_export
-project_name: dynalist_export
+package_name: dynalist_archive
+project_name: dynalist_archive
 python_version: '3.13'

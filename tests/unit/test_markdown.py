@@ -2,7 +2,7 @@
 
 import sqlite3
 
-from dynalist_export.core.tree.markdown import render_subtree_as_markdown
+from dynalist_archive.core.tree.markdown import render_subtree_as_markdown
 
 
 def test_render_subtree_with_depth_limit(populated_db: sqlite3.Connection) -> None:

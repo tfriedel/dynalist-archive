@@ -1,4 +1,4 @@
-# dynalist-export
+# dynalist-archive
 
 Back up and search your [Dynalist](https://dynalist.io) documents locally. Based on [theamk/dynalist-backup](https://github.com/theamk/dynalist-backup).
 
@@ -153,7 +153,7 @@ The first directory found is used (or override with `--data-dir`):
 - `~/.local/share/dynalist-backup`
 - `~/.dynalist-backup`
 - `~/.config/dynalist-backup`
-- `/tmp/dynalist-export`
+- `/tmp/dynalist-archive`
 
 #### Archive data directory
 

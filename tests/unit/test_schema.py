@@ -2,7 +2,7 @@
 
 import sqlite3
 
-from dynalist_export.core.database.schema import create_schema, get_schema_version, migrate_schema
+from dynalist_archive.core.database.schema import create_schema, get_schema_version, migrate_schema
 
 
 def test_create_schema_creates_documents_table() -> None:

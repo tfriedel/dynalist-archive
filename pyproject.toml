@@ -1,5 +1,5 @@
 [project]
-name = "dynalist_export"
+name = "dynalist_archive"
 dynamic = ["version"]
 description = "Dynalist Export"
 readme = "README.md"
@@ -14,15 +14,15 @@ dependencies = [
 ]
 
 [project.scripts]
-dynalist-backup = "dynalist_export.cli:main"
-dynalist-archive = "dynalist_export.archive_cli:app"
+dynalist-backup = "dynalist_archive.cli:main"
+dynalist-archive = "dynalist_archive.archive_cli:app"
 
 [build-system]
 requires = ["hatchling", "uv-dynamic-versioning"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/dynalist_export"]
+packages = ["src/dynalist_archive"]
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
@@ -102,7 +102,7 @@ unfixable = [
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"src/dynalist_export/mcp/server.py" = ["RUF029", "D417"]  # MCP SDK requires async; conn/ctx is infrastructure
+"src/dynalist_archive/mcp/server.py" = ["RUF029", "D417"]  # MCP SDK requires async; conn/ctx is infrastructure
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

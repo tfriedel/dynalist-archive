@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 from typer.testing import CliRunner
 
-from dynalist_export.archive_cli import app
+from dynalist_archive.archive_cli import app
 
 runner = CliRunner()
 
@@ -16,7 +16,7 @@ runner = CliRunner()
 @pytest.fixture(autouse=True)
 def _no_auto_update() -> Iterator[None]:
     """Disable auto-update in CLI tests to prevent real API calls."""
-    with patch("dynalist_export.archive_cli.maybe_auto_update"):
+    with patch("dynalist_archive.archive_cli.maybe_auto_update"):
         yield
 
 
@@ -128,7 +128,7 @@ def test_recent_json_outputs_valid_json(tmp_path: Path) -> None:
 def test_edit_command_returns_json(tmp_path: Path) -> None:
     data = _setup_and_import(tmp_path)
     with patch(
-        "dynalist_export.mcp.server.dynalist_edit_node",
+        "dynalist_archive.mcp.server.dynalist_edit_node",
         return_value={"success": True, "node_id": "a"},
     ):
         result = runner.invoke(
@@ -154,7 +154,7 @@ def test_edit_command_returns_json(tmp_path: Path) -> None:
 def test_add_command_returns_json(tmp_path: Path) -> None:
     data = _setup_and_import(tmp_path)
     with patch(
-        "dynalist_export.mcp.server.dynalist_add_node",
+        "dynalist_archive.mcp.server.dynalist_add_node",
         return_value={"success": True, "node_id": "new123"},
     ):
         result = runner.invoke(

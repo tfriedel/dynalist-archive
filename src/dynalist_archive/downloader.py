@@ -6,7 +6,7 @@ import logging
 import re
 from typing import Any
 
-from dynalist_export.protocols import ApiProtocol, WriterProtocol
+from dynalist_archive.protocols import ApiProtocol, WriterProtocol
 
 
 class Downloader:

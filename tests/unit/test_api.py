@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from dynalist_export.api import DynalistApi
+from dynalist_archive.api import DynalistApi
 
 
 @pytest.fixture
@@ -17,10 +17,10 @@ def api_with_mock_session(
     """Create a DynalistApi with a real token file and mocked requests.Session."""
     token_file = tmp_path / "token.txt"
     token_file.write_text("test-token\n")
-    monkeypatch.setattr("dynalist_export.api.API_TOKEN_FILES", [token_file])
-    monkeypatch.setattr("dynalist_export.api.API_CACHE_PREFIX", None)
+    monkeypatch.setattr("dynalist_archive.api.API_TOKEN_FILES", [token_file])
+    monkeypatch.setattr("dynalist_archive.api.API_CACHE_PREFIX", None)
 
-    with patch("dynalist_export.api.requests.Session") as mock_session_cls:
+    with patch("dynalist_archive.api.requests.Session") as mock_session_cls:
         mock_session = MagicMock()
         mock_session_cls.return_value = mock_session
         api = DynalistApi()
@@ -43,11 +43,11 @@ def test_init_reads_token_from_first_found_file(
     token_file = tmp_path / "token.txt"
     token_file.write_text("my-secret-token\n")
     monkeypatch.setattr(
-        "dynalist_export.api.API_TOKEN_FILES",
+        "dynalist_archive.api.API_TOKEN_FILES",
         [tmp_path / "missing.txt", token_file],
     )
 
-    with patch("dynalist_export.api.requests.Session"):
+    with patch("dynalist_archive.api.requests.Session"):
         api = DynalistApi()
 
     assert api.api_token == "my-secret-token"
@@ -58,7 +58,7 @@ def test_init_raises_when_no_token_file_exists(
 ) -> None:
     """DynalistApi raises RuntimeError when no token file is found."""
     monkeypatch.setattr(
-        "dynalist_export.api.API_TOKEN_FILES",
+        "dynalist_archive.api.API_TOKEN_FILES",
         [tmp_path / "a.txt", tmp_path / "b.txt"],
     )
 
@@ -122,10 +122,10 @@ def test_call_writes_cache_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     cache_dir = tmp_path / "cache"
     cache_dir.mkdir()
     cache_prefix = str(cache_dir / "cache-")
-    monkeypatch.setattr("dynalist_export.api.API_TOKEN_FILES", [token_file])
-    monkeypatch.setattr("dynalist_export.api.API_CACHE_PREFIX", cache_prefix)
+    monkeypatch.setattr("dynalist_archive.api.API_TOKEN_FILES", [token_file])
+    monkeypatch.setattr("dynalist_archive.api.API_CACHE_PREFIX", cache_prefix)
 
-    with patch("dynalist_export.api.requests.Session") as mock_session_cls:
+    with patch("dynalist_archive.api.requests.Session") as mock_session_cls:
         mock_session = MagicMock()
         mock_session_cls.return_value = mock_session
         api = DynalistApi(from_cache=True)
@@ -147,14 +147,14 @@ def test_call_reads_from_cache_when_available(
     cache_dir = tmp_path / "cache"
     cache_dir.mkdir()
     cache_prefix = str(cache_dir / "cache-")
-    monkeypatch.setattr("dynalist_export.api.API_TOKEN_FILES", [token_file])
-    monkeypatch.setattr("dynalist_export.api.API_CACHE_PREFIX", cache_prefix)
+    monkeypatch.setattr("dynalist_archive.api.API_TOKEN_FILES", [token_file])
+    monkeypatch.setattr("dynalist_archive.api.API_CACHE_PREFIX", cache_prefix)
 
     # Pre-populate cache
     cache_file = Path(cache_prefix + "file--list")
     cache_file.write_text(json.dumps({"_code": "Ok", "cached": True}))
 
-    with patch("dynalist_export.api.requests.Session") as mock_session_cls:
+    with patch("dynalist_archive.api.requests.Session") as mock_session_cls:
         mock_session = MagicMock()
         mock_session_cls.return_value = mock_session
         api = DynalistApi(from_cache=True)

@@ -3,7 +3,7 @@
 import re
 import sqlite3
 
-from dynalist_export.models.node import Node, SearchResult
+from dynalist_archive.models.node import Node, SearchResult
 
 
 def _sanitize_fts_token(token: str) -> str:

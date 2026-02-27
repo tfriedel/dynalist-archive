@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from dynalist_export.cli import run_backup
-from dynalist_export.writer import FileWriter
+from dynalist_archive.cli import run_backup
+from dynalist_archive.writer import FileWriter
 from tests.unit.fakes import FakeApi
 from tests.unit.test_downloader import _make_doc, _make_file_list
 

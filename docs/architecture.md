@@ -2,7 +2,7 @@
 
 ## Context
 
-Dynalist is an outliner note-taking app with a tree-structured data model. An existing tool (`~/projects/dynalist_export`) syncs Dynalist documents to local `.c.json` files via the API. We want to add a search/navigation layer on top of this synced data -- a CLI tool and MCP server -- extending the existing project. Architecture follows `~/projects/mattermost_archive`.
+Dynalist is an outliner note-taking app with a tree-structured data model. An existing tool (`~/projects/dynalist_archive`) syncs Dynalist documents to local `.c.json` files via the API. We want to add a search/navigation layer on top of this synced data -- a CLI tool and MCP server -- extending the existing project. Architecture follows `~/projects/mattermost_archive`.
 
 The dataset is small (8 documents, ~11K nodes, 4.2MB JSON) but deeply nested (trees up to 10+ levels). The primary challenge is making tree-structured data searchable and navigable for an AI agent.
 
@@ -10,7 +10,7 @@ The dataset is small (8 documents, ~11K nodes, 4.2MB JSON) but deeply nested (tr
 
 **SQLite with adjacency list + materialized path** -- No graph DB needed at this scale. FTS5 for full-text search. Materialized `path` column (`/root/abc123/def456`) enables subtree queries via `LIKE` prefix and instant breadcrumb computation.
 
-**Extend `~/projects/dynalist_export`** -- Add the archive/search/MCP modules alongside the existing sync code. The existing `api.py`, `config.py`, and `downloader.py` are reused directly.
+**Extend `~/projects/dynalist_archive`** -- Add the archive/search/MCP modules alongside the existing sync code. The existing `api.py`, `config.py`, and `downloader.py` are reused directly.
 
 **7 MCP tools** (5 read + 2 write) -- "Consolidate over proliferate". One unified search tool handles global, per-doc, and subtree search. Outline is handled by `read_node` on root with `max_depth`.
 
@@ -116,10 +116,10 @@ dynalist-archive serve   # MCP server (stdio)
 
 ## Project Structure
 
-Existing files untouched. New modules added under `src/dynalist_export/`:
+Existing files untouched. New modules added under `src/dynalist_archive/`:
 
 ```
-src/dynalist_export/
+src/dynalist_archive/
 ├── __init__.py                         # (existing)
 ├── api.py                              # (existing) -- reused for write ops
 ├── cli.py                              # (existing) -- sync CLI
@@ -179,16 +179,16 @@ tests/
 
 New entry point in `[project.scripts]`:
 ```toml
-dynalist-archive = "dynalist_export.archive_cli:app"
+dynalist-archive = "dynalist_archive.archive_cli:app"
 ```
 
 ## Key Files Reused
 
 | Source | What was reused |
 |--------|--------------|
-| `dynalist_export/downloader.py:184` `_iterate_contents()` | Tree walker algorithm -- ported to `json_reader.py` with path/depth computation |
-| `dynalist_export/config.py` `DATA_DIRECTORIES` | Source dir for `.c.json` files |
-| `dynalist_export/api.py` `DynalistApi` | API client for write operations |
+| `dynalist_archive/downloader.py:184` `_iterate_contents()` | Tree walker algorithm -- ported to `json_reader.py` with path/depth computation |
+| `dynalist_archive/config.py` `DATA_DIRECTORIES` | Source dir for `.c.json` files |
+| `dynalist_archive/api.py` `DynalistApi` | API client for write operations |
 | `mattermost_archive/mcp/server.py` | ServerContext + lifespan pattern, tool wrapper separation |
 | `mattermost_archive/core/search/searcher.py` | FTS5 query building, sanitization, pagination |
 

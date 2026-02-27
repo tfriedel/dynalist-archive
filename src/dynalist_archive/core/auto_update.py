@@ -6,11 +6,11 @@ from pathlib import Path
 
 from loguru import logger
 
-from dynalist_export.api import DynalistApi
-from dynalist_export.config import AUTO_UPDATE_INTERVAL
-from dynalist_export.core.database.schema import get_metadata, set_metadata
-from dynalist_export.downloader import Downloader
-from dynalist_export.writer import FileWriter
+from dynalist_archive.api import DynalistApi
+from dynalist_archive.config import AUTO_UPDATE_INTERVAL
+from dynalist_archive.core.database.schema import get_metadata, set_metadata
+from dynalist_archive.downloader import Downloader
+from dynalist_archive.writer import FileWriter
 
 
 def is_update_needed(conn: sqlite3.Connection, interval: int) -> bool:
@@ -71,7 +71,7 @@ def maybe_auto_update(conn: sqlite3.Connection, source_dir: Path) -> None:
     run_auto_backup(source_dir)
 
     try:
-        from dynalist_export.core.importer.loader import import_source_dir
+        from dynalist_archive.core.importer.loader import import_source_dir
 
         import_source_dir(conn, source_dir)
     except Exception:

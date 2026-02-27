@@ -4,8 +4,8 @@ import json
 import sqlite3
 from pathlib import Path
 
-from dynalist_export.core.database.schema import create_schema
-from dynalist_export.core.importer.loader import import_source_dir
+from dynalist_archive.core.database.schema import create_schema
+from dynalist_archive.core.importer.loader import import_source_dir
 
 MINIMAL_FILE_LIST = {
     "_code": "Ok",

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from dynalist_export.writer import FileWriter
+from dynalist_archive.writer import FileWriter
 
 
 def test_init_creates_writer_for_valid_directory(tmp_path: Path) -> None:

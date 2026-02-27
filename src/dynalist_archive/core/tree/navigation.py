@@ -2,7 +2,7 @@
 
 import sqlite3
 
-from dynalist_export.models.node import Breadcrumb, Node
+from dynalist_archive.models.node import Breadcrumb, Node
 
 
 def get_breadcrumbs(

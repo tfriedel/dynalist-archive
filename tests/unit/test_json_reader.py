@@ -1,6 +1,6 @@
 """Tests for JSON reader that parses .c.json files into domain models."""
 
-from dynalist_export.core.importer.json_reader import parse_document_data
+from dynalist_archive.core.importer.json_reader import parse_document_data
 
 MINIMAL_DOC = {
     "file_id": "doc1",

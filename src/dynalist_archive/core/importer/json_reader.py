@@ -3,7 +3,7 @@
 from collections import deque
 from typing import Any
 
-from dynalist_export.models.node import Document, Node
+from dynalist_archive.models.node import Document, Node
 
 
 def parse_document_data(data: dict[str, Any], *, filename: str) -> tuple[Document, list[Node]]:

@@ -2,7 +2,7 @@
 
 import sqlite3
 
-from dynalist_export.mcp.server import (
+from dynalist_archive.mcp.server import (
     dynalist_get_node_context,
     dynalist_get_recent_changes,
     dynalist_list_documents,

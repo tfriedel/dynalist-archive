@@ -2,8 +2,8 @@
 
 import sqlite3
 
-from dynalist_export.core.tree.navigation import get_breadcrumbs, get_siblings
-from dynalist_export.models.node import Breadcrumb
+from dynalist_archive.core.tree.navigation import get_breadcrumbs, get_siblings
+from dynalist_archive.models.node import Breadcrumb
 
 
 def test_breadcrumbs_for_nested_node(populated_db: sqlite3.Connection) -> None:

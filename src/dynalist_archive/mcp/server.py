@@ -14,12 +14,12 @@ from typing import Any
 from loguru import logger
 from mcp.server.fastmcp import Context, FastMCP
 
-from dynalist_export.config import resolve_data_directory
-from dynalist_export.core.auto_update import maybe_auto_update
-from dynalist_export.core.database.schema import get_metadata, migrate_schema, set_metadata
-from dynalist_export.core.search.searcher import search_nodes
-from dynalist_export.core.tree.markdown import render_subtree_as_markdown
-from dynalist_export.core.tree.navigation import get_breadcrumbs, get_children, get_siblings
+from dynalist_archive.config import resolve_data_directory
+from dynalist_archive.core.auto_update import maybe_auto_update
+from dynalist_archive.core.database.schema import get_metadata, migrate_schema, set_metadata
+from dynalist_archive.core.search.searcher import search_nodes
+from dynalist_archive.core.tree.markdown import render_subtree_as_markdown
+from dynalist_archive.core.tree.navigation import get_breadcrumbs, get_children, get_siblings
 
 _DEFAULT_SOURCE_DIR = resolve_data_directory()
 _DEFAULT_DATA_DIR = Path("~/.local/share/dynalist-archive").expanduser()
@@ -423,8 +423,8 @@ def dynalist_edit_node(
     if not doc_id:
         return {"error": f"Document '{document}' not found."}
 
-    from dynalist_export.api import DynalistApi
-    from dynalist_export.core.write.client import edit_node
+    from dynalist_archive.api import DynalistApi
+    from dynalist_archive.core.write.client import edit_node
 
     try:
         api = DynalistApi()
@@ -465,8 +465,8 @@ def dynalist_add_node(
     if not doc_id:
         return {"error": f"Document '{document}' not found."}
 
-    from dynalist_export.api import DynalistApi
-    from dynalist_export.core.write.client import add_node
+    from dynalist_archive.api import DynalistApi
+    from dynalist_archive.core.write.client import add_node
 
     try:
         api = DynalistApi()
@@ -510,7 +510,7 @@ def _maybe_auto_import(conn: sqlite3.Connection, source_dir: Path) -> None:
     if not source_dir.exists():
         return
 
-    from dynalist_export.core.importer.loader import import_source_dir
+    from dynalist_archive.core.importer.loader import import_source_dir
 
     stats = import_source_dir(conn, source_dir)
     if stats.documents_imported > 0:
@@ -778,7 +778,7 @@ async def dynalist_add_node_tool(
 
 def run_mcp_server() -> None:
     """Run the MCP server with stdio transport."""
-    from dynalist_export.logging_config import configure_logging
+    from dynalist_archive.logging_config import configure_logging
 
     configure_logging(verbose=False)
     mcp_server.run(transport="stdio")

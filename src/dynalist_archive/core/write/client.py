@@ -5,7 +5,7 @@ from typing import Any
 
 from loguru import logger
 
-from dynalist_export.api import DynalistApi
+from dynalist_archive.api import DynalistApi
 
 
 def edit_node(
@@ -108,8 +108,8 @@ def _reimport_document(conn: sqlite3.Connection, api: DynalistApi, document_id: 
     """Re-import a single document from the API after a write."""
     import time
 
-    from dynalist_export.core.importer.json_reader import parse_document_data
-    from dynalist_export.core.importer.loader import insert_nodes
+    from dynalist_archive.core.importer.json_reader import parse_document_data
+    from dynalist_archive.core.importer.loader import insert_nodes
 
     try:
         doc_data = api.call("doc/read", {"file_id": document_id})

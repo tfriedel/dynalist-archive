@@ -175,7 +175,7 @@ sync:
 # Show project information
 info:
     @echo "📊 Project Information:"
-    @echo "  Name: dynalist_export"
+    @echo "  Name: dynalist_archive"
     @echo "  Python: $(uv run python --version)"
     @echo "  UV: $(uv --version)"
     @echo "  Git branch: $(git branch --show-current)"

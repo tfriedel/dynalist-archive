@@ -7,12 +7,12 @@ from typing import Annotated
 import typer
 from loguru import logger
 
-from dynalist_export.config import resolve_data_directory
-from dynalist_export.core.auto_update import maybe_auto_update
-from dynalist_export.core.database.schema import migrate_schema
-from dynalist_export.core.importer.loader import import_source_dir
-from dynalist_export.core.search.searcher import search_nodes
-from dynalist_export.logging_config import configure_logging
+from dynalist_archive.config import resolve_data_directory
+from dynalist_archive.core.auto_update import maybe_auto_update
+from dynalist_archive.core.database.schema import migrate_schema
+from dynalist_archive.core.importer.loader import import_source_dir
+from dynalist_archive.core.search.searcher import search_nodes
+from dynalist_archive.logging_config import configure_logging
 
 app = typer.Typer(help="Dynalist archive: search and browse your Dynalist notes.")
 
@@ -97,7 +97,7 @@ def search(
     """Search for nodes matching a query."""
     import json as json_mod
 
-    from dynalist_export.mcp.server import dynalist_search
+    from dynalist_archive.mcp.server import dynalist_search
 
     conn = _open_db(data_dir)
     try:
@@ -149,7 +149,7 @@ def documents(
     """List all archived documents."""
     import json as json_mod
 
-    from dynalist_export.mcp.server import dynalist_list_documents
+    from dynalist_archive.mcp.server import dynalist_list_documents
 
     conn = _open_db(data_dir)
     try:
@@ -188,7 +188,7 @@ def read(
     """Read a node and its subtree as markdown or JSON."""
     import json as json_mod
 
-    from dynalist_export.mcp.server import dynalist_read_node
+    from dynalist_archive.mcp.server import dynalist_read_node
 
     conn = _open_db(data_dir)
     try:
@@ -240,7 +240,7 @@ def edit(
     """Edit a node's content, note, or checked state."""
     import json as json_mod
 
-    from dynalist_export.mcp.server import dynalist_edit_node
+    from dynalist_archive.mcp.server import dynalist_edit_node
 
     conn = _open_db(data_dir)
     try:
@@ -295,7 +295,7 @@ def add(
     """Add a new child node under an existing parent."""
     import json as json_mod
 
-    from dynalist_export.mcp.server import dynalist_add_node
+    from dynalist_archive.mcp.server import dynalist_add_node
 
     conn = _open_db(data_dir)
     try:
@@ -323,7 +323,7 @@ def add(
 @app.command()
 def serve() -> None:
     """Start the MCP server (stdio transport)."""
-    from dynalist_export.mcp.server import run_mcp_server
+    from dynalist_archive.mcp.server import run_mcp_server
 
     run_mcp_server()
 
@@ -344,7 +344,7 @@ def recent(
     """Show recently modified nodes."""
     import json as json_mod
 
-    from dynalist_export.mcp.server import dynalist_get_recent_changes
+    from dynalist_archive.mcp.server import dynalist_get_recent_changes
 
     conn = _open_db(data_dir)
     try:

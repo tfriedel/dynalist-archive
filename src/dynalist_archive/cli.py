@@ -4,11 +4,11 @@ import argparse
 import logging
 from pathlib import Path
 
-from dynalist_export.api import DynalistApi
-from dynalist_export.config import DATA_DIRECTORIES
-from dynalist_export.downloader import Downloader
-from dynalist_export.protocols import ApiProtocol
-from dynalist_export.writer import FileWriter
+from dynalist_archive.api import DynalistApi
+from dynalist_archive.config import DATA_DIRECTORIES
+from dynalist_archive.downloader import Downloader
+from dynalist_archive.protocols import ApiProtocol
+from dynalist_archive.writer import FileWriter
 
 
 def run_backup(

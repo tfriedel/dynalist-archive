@@ -1,6 +1,6 @@
 from loguru import logger
 
-from dynalist_export import hello
+from dynalist_archive import hello
 
 
 def main() -> None:
