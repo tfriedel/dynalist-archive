@@ -611,6 +611,7 @@ children nested beneath them.
 
 1. Search with dynalist_search — results include subtrees by default
    (3 levels of children). This is usually all you need.
+   Read through all matching results before answering, not just the first.
 2. If you need deeper content, call dynalist_read_node on specific nodes.
 3. Use dynalist_get_node_context to see a node's position (siblings, breadcrumbs).
 
@@ -656,6 +657,7 @@ async def dynalist_search_tool(
     """Search archived Dynalist nodes using full-text search.
 
     Returns nodes matching the query with their subtrees included by default.
+    Review all returned results before answering — do not stop at the first match.
     Query syntax: Words are ANDed. Use "quoted phrases" for exact matches.
     Prefix matching is automatic for 3+ char words.
 
