@@ -14,7 +14,7 @@ Back up and search your [Dynalist](https://dynalist.io) documents locally. Based
 - Imports `.c.json` exports into a searchable SQLite database with full-text search
 - Search, browse, and read nodes as markdown or JSON
 - Edit nodes and add new nodes via the Dynalist API
-- Auto-syncs from Dynalist API on search (5-minute cooldown)
+- Auto-syncs from Dynalist API and reimports into the database on search (5-minute cooldown)
 - MCP server for LLM integration (Claude Code, etc.)
 
 ## Setup
