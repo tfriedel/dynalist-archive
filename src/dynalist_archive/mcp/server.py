@@ -606,9 +606,11 @@ async def dynalist_search_tool(
 
     IMPORTANT: Dynalist is a tree-structured outliner. Search results only
     contain the matched node's own text — child nodes are NOT included.
-    The real content is often in the children underneath a match. You MUST
-    call dynalist_read_node_tool on each interesting result's node_id to
-    retrieve the full subtree. Use max_depth=2 or 3 for large subtrees.
+    The real content is often in the children underneath a match.
+
+    After searching, call dynalist_read_node_tool for ALL results (not just
+    the first one) to retrieve their full subtrees before answering.
+    Use max_depth=2 or 3 for large subtrees.
 
     Pagination: When has_more is true, use next_offset in a follow-up call.
 
