@@ -87,6 +87,21 @@ def create_schema(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def get_metadata(conn: sqlite3.Connection, key: str) -> str | None:
+    """Get a metadata value by key."""
+    row = conn.execute("SELECT value FROM metadata WHERE key = ?", (key,)).fetchone()
+    return row[0] if row else None
+
+
+def set_metadata(conn: sqlite3.Connection, key: str, value: str) -> None:
+    """Set a metadata value."""
+    conn.execute(
+        "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
+        (key, value),
+    )
+    conn.commit()
+
+
 def get_schema_version(conn: sqlite3.Connection) -> int | None:
     """Return the current schema version, or None if metadata table doesn't exist."""
     try:

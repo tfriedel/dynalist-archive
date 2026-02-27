@@ -1,13 +1,24 @@
 """Tests for the archive CLI."""
 
 import json
+from collections.abc import Iterator
 from pathlib import Path
+from unittest.mock import patch
 
+import pytest
 from typer.testing import CliRunner
 
 from dynalist_export.archive_cli import app
 
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def _no_auto_update() -> Iterator[None]:
+    """Disable auto-update in CLI tests to prevent real API calls."""
+    with patch("dynalist_export.archive_cli.maybe_auto_update"):
+        yield
+
 
 MINIMAL_FILE_LIST = {
     "_code": "Ok",

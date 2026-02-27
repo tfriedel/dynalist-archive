@@ -27,5 +27,8 @@ def resolve_data_directory() -> Path:
     return DATA_DIRECTORIES[0]
 
 
+# Auto-update interval in seconds (5 minutes).
+AUTO_UPDATE_INTERVAL: int = 300
+
 # Cache directory, used only when --cache is passed.
 API_CACHE_PREFIX: str = "/tmp/dynalist-backup-cache/cache-"
