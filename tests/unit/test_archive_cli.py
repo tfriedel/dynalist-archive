@@ -84,6 +84,36 @@ def test_documents_command_lists_documents(tmp_path: Path) -> None:
     assert "Test Doc" in result.output
 
 
+def test_read_json_outputs_valid_json(tmp_path: Path) -> None:
+    data = _setup_and_import(tmp_path)
+    result = runner.invoke(
+        app, ["read", "root", "--document", "doc1", "--json", "--data-dir", str(data)]
+    )
+    assert result.exit_code == 0, result.output
+    parsed = json.loads(result.output)
+    assert parsed["node"]["id"] == "root"
+    assert "children" in parsed
+
+
+def test_documents_json_outputs_valid_json(tmp_path: Path) -> None:
+    data = _setup_and_import(tmp_path)
+    result = runner.invoke(app, ["documents", "--json", "--data-dir", str(data)])
+    assert result.exit_code == 0, result.output
+    parsed = json.loads(result.output)
+    assert parsed["count"] == 1
+    assert parsed["documents"][0]["title"] == "Test Doc"
+
+
+def test_recent_json_outputs_valid_json(tmp_path: Path) -> None:
+    data = _setup_and_import(tmp_path)
+    result = runner.invoke(app, ["recent", "--json", "--data-dir", str(data)])
+    assert result.exit_code == 0, result.output
+    parsed = json.loads(result.output)
+    assert parsed["count"] >= 1
+    assert "node_id" in parsed["results"][0]
+    assert "modified" in parsed["results"][0]
+
+
 def test_serve_command_shows_help() -> None:
     result = runner.invoke(app, ["serve", "--help"])
     assert result.exit_code == 0, result.output

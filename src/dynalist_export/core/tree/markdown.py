@@ -50,9 +50,11 @@ def render_subtree_as_markdown(
 
     rows = conn.execute(query, params).fetchall()
 
+    max_absolute_depth = start_depth + max_depth if max_depth is not None else None
+
     out = io.StringIO()
     for row in rows:
-        _node_id_val, content, note, depth, checked, _child_count = row
+        node_id_val, content, note, depth, checked, child_count = row
         relative_depth = depth - start_depth
         indent = "    " * relative_depth
 
@@ -71,5 +73,11 @@ def render_subtree_as_markdown(
         if include_notes and note:
             for note_line in note.split("\n"):
                 out.write(f"{indent}  > {note_line}\n")
+
+        # Truncation indicator when children are cut off by max_depth
+        if max_absolute_depth is not None and depth == max_absolute_depth and child_count > 0:
+            child_indent = "    " * (relative_depth + 1)
+            noun = "child" if child_count == 1 else "children"
+            out.write(f"{child_indent}- ... ({child_count} more {noun}, id={node_id_val})\n")
 
     return out.getvalue()

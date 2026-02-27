@@ -11,7 +11,6 @@ from dynalist_export.config import resolve_data_directory
 from dynalist_export.core.database.schema import migrate_schema
 from dynalist_export.core.importer.loader import import_source_dir
 from dynalist_export.core.search.searcher import search_nodes
-from dynalist_export.core.tree.markdown import render_subtree_as_markdown
 from dynalist_export.logging_config import configure_logging
 
 app = typer.Typer(help="Dynalist archive: search and browse your Dynalist notes.")
@@ -158,16 +157,25 @@ def documents(
         Path | None,
         typer.Option("--data-dir", "-d", help="Archive database directory"),
     ] = None,
+    output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
 ) -> None:
     """List all archived documents."""
+    import json as json_mod
+
+    from dynalist_export.mcp.server import dynalist_list_documents
+
     conn = _open_db(data_dir)
     try:
-        rows = conn.execute(
-            "SELECT file_id, title, filename, node_count FROM documents ORDER BY title"
-        ).fetchall()
-        typer.echo(f"{len(rows)} documents:\n")
-        for file_id, title, filename, node_count in rows:
-            typer.echo(f"  {title} ({filename}) - {node_count} nodes  [id={file_id}]")
+        if output_json:
+            result = dynalist_list_documents(conn)
+            typer.echo(json_mod.dumps(result, indent=2))
+        else:
+            rows = conn.execute(
+                "SELECT file_id, title, filename, node_count FROM documents ORDER BY title"
+            ).fetchall()
+            typer.echo(f"{len(rows)} documents:\n")
+            for file_id, title, filename, node_count in rows:
+                typer.echo(f"  {title} ({filename}) - {node_count} nodes  [id={file_id}]")
     finally:
         conn.close()
 
@@ -187,29 +195,30 @@ def read(
         Path | None,
         typer.Option("--data-dir", "-d", help="Archive database directory"),
     ] = None,
+    output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
 ) -> None:
-    """Read a node and its subtree as markdown."""
+    """Read a node and its subtree as markdown or JSON."""
+    import json as json_mod
+
+    from dynalist_export.mcp.server import dynalist_read_node
+
     conn = _open_db(data_dir)
     try:
-        if document:
-            doc_id = _resolve_document_id(conn, document)
-            if not doc_id:
-                typer.echo(f"Document '{document}' not found.")
-                raise typer.Exit(1)
-        else:
-            row = conn.execute("SELECT document_id FROM nodes WHERE id = ?", (node_id,)).fetchone()
-            if not row:
-                typer.echo(f"Node '{node_id}' not found.")
-                raise typer.Exit(1)
-            doc_id = row[0]
-
-        md = render_subtree_as_markdown(
-            conn, document_id=doc_id, node_id=node_id, max_depth=max_depth
+        output_format = "json" if output_json else "markdown"
+        result = dynalist_read_node(
+            conn,
+            node_id=node_id,
+            document=document,
+            max_depth=max_depth,
+            output_format=output_format,
         )
-        if md:
-            typer.echo(md)
+        if "error" in result:
+            typer.echo(result["error"])
+            raise typer.Exit(1)
+        if output_json:
+            typer.echo(json_mod.dumps(result, indent=2))
         else:
-            typer.echo(f"Node '{node_id}' not found in document.")
+            typer.echo(result.get("content", ""))
     finally:
         conn.close()
 
@@ -233,34 +242,46 @@ def recent(
         Path | None,
         typer.Option("--data-dir", "-d", help="Archive database directory"),
     ] = None,
+    output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
 ) -> None:
     """Show recently modified nodes."""
-    from datetime import UTC, datetime
+    import json as json_mod
+
+    from dynalist_export.mcp.server import dynalist_get_recent_changes
 
     conn = _open_db(data_dir)
     try:
-        query = (
-            "SELECT n.id, n.document_id, n.content, n.modified, n.path, d.title "
-            "FROM nodes n JOIN documents d ON d.file_id = n.document_id "
-        )
-        params: list[str | int] = []
-
-        if document:
-            doc_id = _resolve_document_id(conn, document)
-            if not doc_id:
-                typer.echo(f"Document '{document}' not found.")
+        if output_json:
+            result = dynalist_get_recent_changes(conn, document=document, limit=limit)
+            if "error" in result:
+                typer.echo(result["error"])
                 raise typer.Exit(1)
-            query += "WHERE n.document_id = ? "
-            params.append(doc_id)
+            typer.echo(json_mod.dumps(result, indent=2))
+        else:
+            from datetime import UTC, datetime
 
-        query += "ORDER BY n.modified DESC LIMIT ?"
-        params.append(limit)
+            query = (
+                "SELECT n.id, n.document_id, n.content, n.modified, n.path, d.title "
+                "FROM nodes n JOIN documents d ON d.file_id = n.document_id "
+            )
+            params: list[str | int] = []
 
-        rows = conn.execute(query, params).fetchall()
-        for node_id_val, _doc_id, content, modified, path, doc_title in rows:
-            dt = datetime.fromtimestamp(modified / 1000, tz=UTC)
-            typer.echo(f"  [{doc_title}] {content[:80]}")
-            typer.echo(f"    {dt:%Y-%m-%d %H:%M}  id={node_id_val}  path={path}")
-            typer.echo()
+            if document:
+                doc_id = _resolve_document_id(conn, document)
+                if not doc_id:
+                    typer.echo(f"Document '{document}' not found.")
+                    raise typer.Exit(1)
+                query += "WHERE n.document_id = ? "
+                params.append(doc_id)
+
+            query += "ORDER BY n.modified DESC LIMIT ?"
+            params.append(limit)
+
+            rows = conn.execute(query, params).fetchall()
+            for node_id_val, _doc_id, content, modified, path, doc_title in rows:
+                dt = datetime.fromtimestamp(modified / 1000, tz=UTC)
+                typer.echo(f"  [{doc_title}] {content[:80]}")
+                typer.echo(f"    {dt:%Y-%m-%d %H:%M}  id={node_id_val}  path={path}")
+                typer.echo()
     finally:
         conn.close()
