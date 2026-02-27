@@ -1,5 +1,6 @@
 """Parse Dynalist .c.json files into domain models."""
 
+from collections import deque
 from typing import Any
 
 from dynalist_export.models.node import Document, Node
@@ -31,9 +32,11 @@ def parse_document_data(
 
     # BFS to compute depth, path, sort_order, parent_id.
     # sort_order comes from the position in the parent's children array.
-    todo: list[tuple[str, str | None, int, str, int]] = [("root", None, 0, "", 0)]
+    todo: deque[tuple[str, str | None, int, str, int]] = deque(
+        [("root", None, 0, "", 0)]
+    )
     while todo:
-        node_id, parent_id, depth, parent_path, sort_order = todo.pop(0)
+        node_id, parent_id, depth, parent_path, sort_order = todo.popleft()
         raw = nodes_by_id.pop(node_id)
         path = f"{parent_path}/{node_id}"
         children = raw.get("children", [])

@@ -107,8 +107,8 @@ def search_nodes(
         params.append(document_id)
 
     if below_node_path:
-        where_clauses.append("n.path LIKE ? || '%'")
-        params.append(below_node_path)
+        where_clauses.append("(n.path = ? OR n.path LIKE ? || '/%')")
+        params.extend([below_node_path, below_node_path])
 
     where_sql = " AND ".join(where_clauses)
 

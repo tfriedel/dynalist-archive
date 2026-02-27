@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 from loguru import logger
 
-from dynalist_export.config import DATA_DIRECTORIES
+from dynalist_export.config import resolve_data_directory
 from dynalist_export.core.database.schema import migrate_schema
 from dynalist_export.core.importer.loader import import_source_dir
 from dynalist_export.core.search.searcher import search_nodes
@@ -16,8 +16,8 @@ from dynalist_export.logging_config import configure_logging
 
 app = typer.Typer(help="Dynalist archive: search and browse your Dynalist notes.")
 
-# Default source: where dynalist-backup stores .c.json files
-_DEFAULT_SOURCE_DIR = DATA_DIRECTORIES[0]
+# Default source: where dynalist-backup stores .c.json files (first existing dir)
+_DEFAULT_SOURCE_DIR = resolve_data_directory()
 
 # Default archive location
 _DEFAULT_DATA_DIR = Path("~/.local/share/dynalist-archive").expanduser()

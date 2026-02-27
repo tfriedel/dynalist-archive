@@ -38,7 +38,7 @@ def _should_reimport(
     return row[0] != source_hash
 
 
-def _insert_nodes(conn: sqlite3.Connection, nodes: list[Node]) -> None:
+def insert_nodes(conn: sqlite3.Connection, nodes: list[Node]) -> None:
     conn.executemany(
         """INSERT OR REPLACE INTO nodes
            (id, document_id, parent_id, content, note, created, modified,
@@ -100,30 +100,37 @@ def import_source_dir(
 
         doc, nodes = parse_document_data(data, filename=filename)
 
-        # Clear old data for this document
-        conn.execute("DELETE FROM nodes WHERE document_id = ?", (file_id,))
-        conn.execute("DELETE FROM documents WHERE file_id = ?", (file_id,))
+        try:
+            # Clear old data for this document
+            conn.execute("DELETE FROM nodes WHERE document_id = ?", (file_id,))
+            conn.execute("DELETE FROM documents WHERE file_id = ?", (file_id,))
 
-        # Insert document
-        now_ms = int(time.time() * 1000)
-        conn.execute(
-            """INSERT INTO documents (file_id, title, filename, version, node_count, imported_at)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (doc.file_id, doc.title, doc.filename, doc.version, doc.node_count, now_ms),
-        )
+            # Insert document
+            now_ms = int(time.time() * 1000)
+            conn.execute(
+                """INSERT INTO documents
+                   (file_id, title, filename, version, node_count, imported_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (doc.file_id, doc.title, doc.filename, doc.version, doc.node_count, now_ms),
+            )
 
-        # Insert nodes
-        _insert_nodes(conn, nodes)
+            # Insert nodes
+            insert_nodes(conn, nodes)
 
-        # Update sync state
-        conn.execute(
-            """INSERT OR REPLACE INTO sync_state
-               (document_id, version, last_import_at, source_hash)
-               VALUES (?, ?, ?, ?)""",
-            (file_id, doc.version, now_ms, source_hash),
-        )
+            # Update sync state
+            conn.execute(
+                """INSERT OR REPLACE INTO sync_state
+                   (document_id, version, last_import_at, source_hash)
+                   VALUES (?, ?, ?, ?)""",
+                (file_id, doc.version, now_ms, source_hash),
+            )
 
-        conn.commit()
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            logger.exception("Failed to import {}", json_path.name)
+            continue
+
         docs_imported += 1
         total_nodes += len(nodes)
         logger.debug("Imported {} ({} nodes)", doc.title, len(nodes))

@@ -12,13 +12,13 @@ from typing import Any
 from loguru import logger
 from mcp.server.fastmcp import Context, FastMCP
 
-from dynalist_export.config import DATA_DIRECTORIES
+from dynalist_export.config import resolve_data_directory
 from dynalist_export.core.database.schema import migrate_schema
 from dynalist_export.core.search.searcher import search_nodes
 from dynalist_export.core.tree.markdown import render_subtree_as_markdown
 from dynalist_export.core.tree.navigation import get_breadcrumbs, get_children, get_siblings
 
-_DEFAULT_SOURCE_DIR = DATA_DIRECTORIES[0]
+_DEFAULT_SOURCE_DIR = resolve_data_directory()
 _DEFAULT_DATA_DIR = Path("~/.local/share/dynalist-archive").expanduser()
 
 
@@ -401,7 +401,10 @@ def dynalist_edit_node(
     from dynalist_export.api import DynalistApi
     from dynalist_export.core.write.client import edit_node
 
-    api = DynalistApi()
+    try:
+        api = DynalistApi()
+    except RuntimeError as e:
+        return {"error": str(e)}
     return edit_node(
         conn, api, node_id=node_id, document_id=doc_id,
         content=content, note=note, checked=checked,
@@ -435,7 +438,10 @@ def dynalist_add_node(
     from dynalist_export.api import DynalistApi
     from dynalist_export.core.write.client import add_node
 
-    api = DynalistApi()
+    try:
+        api = DynalistApi()
+    except RuntimeError as e:
+        return {"error": str(e)}
     return add_node(
         conn, api, parent_id=parent_id, document_id=doc_id,
         content=content, note=note, index=index, checked=checked,

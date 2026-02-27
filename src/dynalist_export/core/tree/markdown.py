@@ -38,9 +38,9 @@ def render_subtree_as_markdown(
     # Fetch all nodes in the subtree
     query = (
         "SELECT id, content, note, depth, checked, child_count "
-        "FROM nodes WHERE document_id = ? AND path LIKE ? || '%' "
+        "FROM nodes WHERE document_id = ? AND (path = ? OR path LIKE ? || '/%') "
     )
-    params: list[str | int] = [document_id, start_path]
+    params: list[str | int] = [document_id, start_path, start_path]
 
     if max_depth is not None:
         query += "AND depth <= ? "

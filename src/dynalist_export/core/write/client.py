@@ -113,7 +113,7 @@ def _reimport_document(
     import time
 
     from dynalist_export.core.importer.json_reader import parse_document_data
-    from dynalist_export.core.importer.loader import _insert_nodes
+    from dynalist_export.core.importer.loader import insert_nodes
 
     try:
         doc_data = api.call("doc/read", {"file_id": document_id})
@@ -143,8 +143,18 @@ def _reimport_document(
                VALUES (?, ?, ?, ?, ?, ?)""",
             (doc.file_id, doc.title, doc.filename, doc.version, doc.node_count, now_ms),
         )
-        _insert_nodes(conn, nodes)
+        insert_nodes(conn, nodes)
+
+        # Update sync_state so the next import_source_dir doesn't overwrite
+        conn.execute(
+            """INSERT OR REPLACE INTO sync_state
+               (document_id, version, last_import_at, source_hash)
+               VALUES (?, ?, ?, ?)""",
+            (document_id, doc.version, now_ms, "api-write"),
+        )
+
         conn.commit()
         logger.info("Re-imported document {} after write", document_id)
     except Exception:
+        conn.rollback()
         logger.exception("Failed to re-import document {} after write", document_id)
