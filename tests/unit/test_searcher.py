@@ -21,9 +21,7 @@ def test_search_scoped_to_document(populated_db: sqlite3.Connection) -> None:
 def test_search_below_node(populated_db: sqlite3.Connection) -> None:
     """Search only within a subtree (n1 and its children)."""
     # n1 has child n1a ("FastAPI for web services") -- search for "web" below n1
-    results, total = search_nodes(
-        populated_db, query="web", below_node_path="/root/n1"
-    )
+    results, total = search_nodes(populated_db, query="web", below_node_path="/root/n1")
     assert total == 1
     assert results[0].node.id == "n1a"
 

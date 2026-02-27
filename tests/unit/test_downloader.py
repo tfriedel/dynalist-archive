@@ -121,15 +121,17 @@ def test_record_to_text_converts_document_to_formatted_text() -> None:
 
 def test_record_to_text_uses_dot_for_continuation_lines() -> None:
     """Multiline content uses * for first line, . for subsequent."""
-    doc = _make_doc(nodes=[
-        {
-            "id": "root",
-            "content": "line1\nline2",
-            "note": "",
-            "created": 1000,
-            "modified": 2000,
-        },
-    ])
+    doc = _make_doc(
+        nodes=[
+            {
+                "id": "root",
+                "content": "line1\nline2",
+                "note": "",
+                "created": 1000,
+                "modified": 2000,
+            },
+        ]
+    )
 
     text = _record_to_text(doc)
 
@@ -236,10 +238,13 @@ def test_sync_all_orchestrates_full_pipeline() -> None:
     fake_writer = FakeWriter()
 
     fake_api.add_response("file/list", _make_file_list())
-    fake_api.add_response("doc/check_for_updates", {
-        "versions": {"doc1": 1},
-        "_code": "Ok",
-    })
+    fake_api.add_response(
+        "doc/check_for_updates",
+        {
+            "versions": {"doc1": 1},
+            "_code": "Ok",
+        },
+    )
     doc_response = {**_make_doc(), "_code": "Ok"}
     fake_api.add_response("doc/read", doc_response)
 

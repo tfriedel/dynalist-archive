@@ -26,9 +26,7 @@ def _file_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _should_reimport(
-    conn: sqlite3.Connection, document_id: str, source_hash: str
-) -> bool:
+def _should_reimport(conn: sqlite3.Connection, document_id: str, source_hash: str) -> bool:
     row = conn.execute(
         "SELECT source_hash FROM sync_state WHERE document_id = ?",
         (document_id,),
@@ -46,9 +44,19 @@ def insert_nodes(conn: sqlite3.Connection, nodes: list[Node]) -> None:
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         [
             (
-                n.id, n.document_id, n.parent_id, n.content, n.note,
-                n.created, n.modified, n.sort_order, n.depth, n.path,
-                n.checked, n.color, n.child_count,
+                n.id,
+                n.document_id,
+                n.parent_id,
+                n.content,
+                n.note,
+                n.created,
+                n.modified,
+                n.sort_order,
+                n.depth,
+                n.path,
+                n.checked,
+                n.color,
+                n.child_count,
             )
             for n in nodes
         ],
@@ -137,7 +145,9 @@ def import_source_dir(
 
     logger.info(
         "Import complete: {} imported, {} skipped, {} total nodes",
-        docs_imported, docs_skipped, total_nodes,
+        docs_imported,
+        docs_skipped,
+        total_nodes,
     )
     return ImportStats(
         documents_imported=docs_imported,

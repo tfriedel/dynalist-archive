@@ -219,9 +219,7 @@ def test_git_commit_creates_commit_when_changes_exist(tmp_path: Path) -> None:
 
     writer.git_commit(dry_run=False)
 
-    log = subprocess.check_output(
-        ["git", "log", "--oneline"], cwd=tmp_path
-    ).decode()
+    log = subprocess.check_output(["git", "log", "--oneline"], cwd=tmp_path).decode()
     assert len(log.strip().splitlines()) == 2  # init + our commit
 
 
@@ -233,7 +231,5 @@ def test_git_commit_skips_when_no_changes(tmp_path: Path) -> None:
 
     writer.git_commit(dry_run=False)  # Should not raise
 
-    log = subprocess.check_output(
-        ["git", "log", "--oneline"], cwd=tmp_path
-    ).decode()
+    log = subprocess.check_output(["git", "log", "--oneline"], cwd=tmp_path).decode()
     assert len(log.strip().splitlines()) == 1  # Only init commit

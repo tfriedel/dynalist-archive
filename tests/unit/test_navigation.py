@@ -25,9 +25,7 @@ def test_breadcrumbs_for_nested_node(populated_db: sqlite3.Connection) -> None:
 
 def test_siblings_of_middle_node(populated_db: sqlite3.Connection) -> None:
     """n1 has sibling n2 (both children of root in doc1)."""
-    before, after = get_siblings(
-        populated_db, document_id="doc1", parent_id="root", sort_order=0
-    )
+    before, after = get_siblings(populated_db, document_id="doc1", parent_id="root", sort_order=0)
     assert len(before) == 0  # n1 is first child
     assert len(after) == 1
     assert after[0].id == "n2"

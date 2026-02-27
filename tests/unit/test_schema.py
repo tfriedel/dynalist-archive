@@ -17,9 +17,7 @@ def test_create_schema_creates_nodes_table_and_fts() -> None:
     create_schema(conn)
     tables = {
         row[0]
-        for row in conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        ).fetchall()
+        for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
     }
     assert "nodes" in tables
     assert "nodes_fts" in tables

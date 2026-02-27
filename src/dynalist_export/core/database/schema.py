@@ -90,9 +90,7 @@ def create_schema(conn: sqlite3.Connection) -> None:
 def get_schema_version(conn: sqlite3.Connection) -> int | None:
     """Return the current schema version, or None if metadata table doesn't exist."""
     try:
-        row = conn.execute(
-            "SELECT value FROM metadata WHERE key = 'schema_version'"
-        ).fetchone()
+        row = conn.execute("SELECT value FROM metadata WHERE key = 'schema_version'").fetchone()
     except sqlite3.OperationalError:
         return None
     return int(row[0]) if row else None

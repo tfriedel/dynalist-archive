@@ -76,9 +76,7 @@ def test_import_populates_fts_index(tmp_path: Path) -> None:
     import_source_dir(conn, tmp_path)
 
     # FTS5 search should find the node
-    rows = conn.execute(
-        "SELECT content FROM nodes_fts WHERE nodes_fts MATCH 'hello'"
-    ).fetchall()
+    rows = conn.execute("SELECT content FROM nodes_fts WHERE nodes_fts MATCH 'hello'").fetchall()
     assert len(rows) == 1
     assert rows[0][0] == "Hello world"
 

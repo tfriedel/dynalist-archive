@@ -38,9 +38,7 @@ def _resolve_document(conn: sqlite3.Connection, document: str) -> str | None:
     return row[0] if row else None
 
 
-def _breadcrumbs_str(
-    conn: sqlite3.Connection, document_id: str, path: str
-) -> str:
+def _breadcrumbs_str(conn: sqlite3.Connection, document_id: str, path: str) -> str:
     crumbs = get_breadcrumbs(conn, document_id=document_id, path=path)
     return " > ".join(c.content[:40] for c in crumbs) if crumbs else ""
 
@@ -86,14 +84,15 @@ def dynalist_search(
         if not doc_id:
             return {
                 "error": f"Document '{document}' not found.",
-                "results": [], "count": 0, "total": 0,
+                "results": [],
+                "count": 0,
+                "total": 0,
             }
 
     below_path: str | None = None
     if below_node:
         row = conn.execute(
-            "SELECT path FROM nodes WHERE id = ?"
-            + (" AND document_id = ?" if doc_id else ""),
+            "SELECT path FROM nodes WHERE id = ?" + (" AND document_id = ?" if doc_id else ""),
             (below_node, doc_id) if doc_id else (below_node,),
         ).fetchone()
         if row:
@@ -101,12 +100,18 @@ def dynalist_search(
         else:
             return {
                 "error": f"Node '{below_node}' not found.",
-                "results": [], "count": 0, "total": 0,
+                "results": [],
+                "count": 0,
+                "total": 0,
             }
 
     results, total = search_nodes(
-        conn, query=query, document_id=doc_id, below_node_path=below_path,
-        limit=limit, offset=offset,
+        conn,
+        query=query,
+        document_id=doc_id,
+        below_node_path=below_path,
+        limit=limit,
+        offset=offset,
     )
 
     serialized = []
@@ -200,8 +205,11 @@ def dynalist_read_node(
 
     if output_format == "markdown":
         md = render_subtree_as_markdown(
-            conn, document_id=doc_id, node_id=node_id,
-            max_depth=max_depth, include_notes=include_notes,
+            conn,
+            document_id=doc_id,
+            node_id=node_id,
+            max_depth=max_depth,
+            include_notes=include_notes,
         )
         estimated_tokens = len(md) // 4
         result: dict[str, Any] = {
@@ -349,8 +357,11 @@ def dynalist_get_node_context(
     breadcrumbs = _breadcrumbs_str(conn, doc_id, path)
     children = get_children(conn, document_id=doc_id, parent_id=node_id, limit=child_limit)
     before, after = get_siblings(
-        conn, document_id=doc_id, parent_id=parent_id,
-        sort_order=sort_order, count=sibling_count,
+        conn,
+        document_id=doc_id,
+        parent_id=parent_id,
+        sort_order=sort_order,
+        count=sibling_count,
     )
 
     return {
@@ -367,8 +378,7 @@ def dynalist_get_node_context(
         "siblings_before": [{"id": s.id, "content": s.content[:80]} for s in before],
         "siblings_after": [{"id": s.id, "content": s.content[:80]} for s in after],
         "children": [
-            {"id": c.id, "content": c.content[:80], "child_count": c.child_count}
-            for c in children
+            {"id": c.id, "content": c.content[:80], "child_count": c.child_count} for c in children
         ],
     }
 
@@ -406,8 +416,13 @@ def dynalist_edit_node(
     except RuntimeError as e:
         return {"error": str(e)}
     return edit_node(
-        conn, api, node_id=node_id, document_id=doc_id,
-        content=content, note=note, checked=checked,
+        conn,
+        api,
+        node_id=node_id,
+        document_id=doc_id,
+        content=content,
+        note=note,
+        checked=checked,
     )
 
 
@@ -443,8 +458,14 @@ def dynalist_add_node(
     except RuntimeError as e:
         return {"error": str(e)}
     return add_node(
-        conn, api, parent_id=parent_id, document_id=doc_id,
-        content=content, note=note, index=index, checked=checked,
+        conn,
+        api,
+        parent_id=parent_id,
+        document_id=doc_id,
+        content=content,
+        note=note,
+        index=index,
+        checked=checked,
     )
 
 
@@ -543,9 +564,14 @@ async def dynalist_search_tool(
         response_format: "concise" or "detailed".
     """
     return dynalist_search(
-        _ctx(ctx).conn, query=query, document=document, below_node=below_node,
+        _ctx(ctx).conn,
+        query=query,
+        document=document,
+        below_node=below_node,
         include_breadcrumbs=include_breadcrumbs,
-        limit=limit, offset=offset, response_format=response_format,
+        limit=limit,
+        offset=offset,
+        response_format=response_format,
     )
 
 
@@ -572,8 +598,12 @@ async def dynalist_read_node_tool(
         include_notes: Include node notes in output.
     """
     return dynalist_read_node(
-        _ctx(ctx).conn, node_id=node_id, document=document,
-        max_depth=max_depth, output_format=output_format, include_notes=include_notes,
+        _ctx(ctx).conn,
+        node_id=node_id,
+        document=document,
+        max_depth=max_depth,
+        output_format=output_format,
+        include_notes=include_notes,
     )
 
 
@@ -607,8 +637,12 @@ async def dynalist_get_recent_changes_tool(
         include_breadcrumbs: Include ancestor chain.
     """
     return dynalist_get_recent_changes(
-        _ctx(ctx).conn, document=document, since=since,
-        limit=limit, offset=offset, include_breadcrumbs=include_breadcrumbs,
+        _ctx(ctx).conn,
+        document=document,
+        since=since,
+        limit=limit,
+        offset=offset,
+        include_breadcrumbs=include_breadcrumbs,
     )
 
 
@@ -632,8 +666,11 @@ async def dynalist_get_node_context_tool(
         child_limit: Max direct children to show.
     """
     return dynalist_get_node_context(
-        _ctx(ctx).conn, node_id=node_id, document=document,
-        sibling_count=sibling_count, child_limit=child_limit,
+        _ctx(ctx).conn,
+        node_id=node_id,
+        document=document,
+        sibling_count=sibling_count,
+        child_limit=child_limit,
     )
 
 
@@ -659,8 +696,12 @@ async def dynalist_edit_node_tool(
         checked: New checked state.
     """
     return dynalist_edit_node(
-        _ctx(ctx).conn, node_id=node_id, document=document,
-        content=content, note=note, checked=checked,
+        _ctx(ctx).conn,
+        node_id=node_id,
+        document=document,
+        content=content,
+        note=note,
+        checked=checked,
     )
 
 
@@ -688,8 +729,13 @@ async def dynalist_add_node_tool(
         checked: Optional checked state.
     """
     return dynalist_add_node(
-        _ctx(ctx).conn, parent_id=parent_id, document=document,
-        content=content, note=note, index=index, checked=checked,
+        _ctx(ctx).conn,
+        parent_id=parent_id,
+        document=document,
+        content=content,
+        note=note,
+        index=index,
+        checked=checked,
     )
 
 

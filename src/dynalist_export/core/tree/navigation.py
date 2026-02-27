@@ -65,9 +65,18 @@ def get_siblings(
 
     def to_node(row: tuple) -> Node:
         return Node(
-            id=row[0], document_id=row[1], parent_id=row[2], content=row[3],
-            note=row[4], created=row[5], modified=row[6], sort_order=row[7],
-            depth=row[8], path=row[9], checked=row[10], color=row[11],
+            id=row[0],
+            document_id=row[1],
+            parent_id=row[2],
+            content=row[3],
+            note=row[4],
+            created=row[5],
+            modified=row[6],
+            sort_order=row[7],
+            depth=row[8],
+            path=row[9],
+            checked=row[10],
+            color=row[11],
             child_count=row[12],
         )
 
@@ -95,9 +104,18 @@ def get_children(
 
     return tuple(
         Node(
-            id=r[0], document_id=r[1], parent_id=r[2], content=r[3],
-            note=r[4], created=r[5], modified=r[6], sort_order=r[7],
-            depth=r[8], path=r[9], checked=r[10], color=r[11],
+            id=r[0],
+            document_id=r[1],
+            parent_id=r[2],
+            content=r[3],
+            note=r[4],
+            created=r[5],
+            modified=r[6],
+            sort_order=r[7],
+            depth=r[8],
+            path=r[9],
+            checked=r[10],
+            color=r[11],
             child_count=r[12],
         )
         for r in rows

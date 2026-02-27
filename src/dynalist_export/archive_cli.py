@@ -197,9 +197,7 @@ def read(
                 typer.echo(f"Document '{document}' not found.")
                 raise typer.Exit(1)
         else:
-            row = conn.execute(
-                "SELECT document_id FROM nodes WHERE id = ?", (node_id,)
-            ).fetchone()
+            row = conn.execute("SELECT document_id FROM nodes WHERE id = ?", (node_id,)).fetchone()
             if not row:
                 typer.echo(f"Node '{node_id}' not found.")
                 raise typer.Exit(1)

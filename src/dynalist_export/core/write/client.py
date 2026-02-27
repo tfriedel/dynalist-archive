@@ -106,9 +106,7 @@ def add_node(
     return output
 
 
-def _reimport_document(
-    conn: sqlite3.Connection, api: DynalistApi, document_id: str
-) -> None:
+def _reimport_document(conn: sqlite3.Connection, api: DynalistApi, document_id: str) -> None:
     """Re-import a single document from the API after a write."""
     import time
 

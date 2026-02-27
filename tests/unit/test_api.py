@@ -17,9 +17,7 @@ def api_with_mock_session(
     """Create a DynalistApi with a real token file and mocked requests.Session."""
     token_file = tmp_path / "token.txt"
     token_file.write_text("test-token\n")
-    monkeypatch.setattr(
-        "dynalist_export.api.API_TOKEN_FILES", [token_file]
-    )
+    monkeypatch.setattr("dynalist_export.api.API_TOKEN_FILES", [token_file])
     monkeypatch.setattr("dynalist_export.api.API_CACHE_PREFIX", None)
 
     with patch("dynalist_export.api.requests.Session") as mock_session_cls:
@@ -88,9 +86,7 @@ def test_call_returns_parsed_json_response(
 ) -> None:
     """API call returns the parsed JSON response."""
     api, mock_session = api_with_mock_session
-    mock_session.post.return_value = _make_response(
-        {"_code": "Ok", "files": [1, 2, 3]}
-    )
+    mock_session.post.return_value = _make_response({"_code": "Ok", "files": [1, 2, 3]})
 
     result = api.call("file/list", {})
 
@@ -102,9 +98,7 @@ def test_call_raises_on_api_error(
 ) -> None:
     """API call raises RuntimeError when _code is not Ok."""
     api, mock_session = api_with_mock_session
-    mock_session.post.return_value = _make_response(
-        {"_code": "InvalidToken", "_msg": "bad token"}
-    )
+    mock_session.post.return_value = _make_response({"_code": "InvalidToken", "_msg": "bad token"})
 
     with pytest.raises(RuntimeError, match="API call failed"):
         api.call("file/list", {})
@@ -121,9 +115,7 @@ def test_call_raises_on_http_error(
         api.call("file/list", {})
 
 
-def test_call_writes_cache_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_call_writes_cache_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """API call writes response to cache when cache prefix is set."""
     token_file = tmp_path / "token.txt"
     token_file.write_text("test-token\n")
