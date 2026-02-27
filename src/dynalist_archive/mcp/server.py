@@ -28,14 +28,8 @@ _DEFAULT_DATA_DIR = Path("~/.local/share/dynalist-archive").expanduser()
 _READ_ONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False)
 _WRITE = ToolAnnotations(readOnlyHint=False, destructiveHint=True)
 
-_DOC_NOT_FOUND = (
-    "Document '{}' not found."
-    " Use dynalist_list_documents to see available names."
-)
-_NODE_NOT_FOUND = (
-    "Node '{}' not found."
-    " Use dynalist_search to find valid node IDs."
-)
+_DOC_NOT_FOUND = "Document '{}' not found. Use dynalist_list_documents to see available names."
+_NODE_NOT_FOUND = "Node '{}' not found. Use dynalist_search to find valid node IDs."
 
 
 def _build_url(document_id: str, node_id: str | None = None) -> str:
