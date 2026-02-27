@@ -1,39 +1,46 @@
 ---
 name: dynalist-search
-description: Search and browse archived Dynalist notes. Use when finding notes, outlines, or navigating tree-structured content.
+description: Search and browse archived Dynalist notes. This skill should be used when finding notes, outlines, navigating tree-structured content, or exploring Dynalist documents.
 ---
 
 # Dynalist Search
 
 Search and navigate locally archived Dynalist notes using `dynalist-archive`.
 
+## IMPORTANT: Always use `--json`
+
+Agents MUST pass `--json` on every command. JSON output is structured and parseable; plain-text output is for humans only and should never be used by agents.
+
 ## Quick Reference
 
 ```bash
 # List all documents
-dynalist-archive documents
+dynalist-archive documents --json
 
-# Search across all documents
+# Search across all documents (default limit: 10)
 dynalist-archive search "topic" --json
 
 # Search within a specific document
 dynalist-archive search "topic" --document "Notes" --json
 
 # Read a node and its subtree
-dynalist-archive read <node_id>
+dynalist-archive read <node_id> --json
+
+# Read with depth limit
+dynalist-archive read <node_id> --max-depth 2 --json
 
 # Recent changes
-dynalist-archive recent --limit 20
+dynalist-archive recent --json --limit 20
 ```
 
 ## Common Options
 
 | Option            | Description                                        |
 | ----------------- | -------------------------------------------------- |
-| `--json`, `-j`    | Structured JSON output (for search command)        |
+| `--json`, `-j`    | **Always use** - structured output for parsing      |
 | `--document`, `-D`| Filter by document title, filename, or file_id     |
 | `--below`, `-b`   | Restrict search to subtree below a node path       |
-| `--limit`, `-n`   | Max results (default: 10)                          |
+| `--limit`, `-n`   | Max results (default: 10 for search, 20 for recent)|
 | `--max-depth`, `-m`| Max depth levels for read command                 |
 | `--data-dir`, `-d`| Custom archive database directory                  |
 
@@ -41,17 +48,17 @@ dynalist-archive recent --limit 20
 
 ### Find and Explore Notes
 
-Two-step workflow: search first, then read subtree.
+Two-step workflow: search first, then read the subtree.
 
 ```bash
 # 1. Search for topic
 dynalist-archive search "interview questions" --json
 
 # 2. Read the full subtree of an interesting node
-dynalist-archive read <node_id>
+dynalist-archive read <node_id> --json
 
 # 3. Read with depth limit for large subtrees
-dynalist-archive read <node_id> --max-depth 2
+dynalist-archive read <node_id> --max-depth 2 --json
 ```
 
 ### Search Within a Document
@@ -68,10 +75,35 @@ dynalist-archive search "python" --document "notes" --json
 
 ```bash
 # List all documents with node counts
-dynalist-archive documents
+dynalist-archive documents --json
 
 # Read root of a document (table of contents)
-dynalist-archive read root --document "Notes" --max-depth 1
+dynalist-archive read root --document "Notes" --max-depth 1 --json
+```
+
+### Check Recent Changes
+
+```bash
+# Recent changes across all documents (JSON)
+dynalist-archive recent --json
+
+# Recent changes in a specific document
+dynalist-archive recent --json --document "Notes" --limit 30
+```
+
+### Reducing Output with jq
+
+Truncate messages for summaries:
+
+```bash
+# Short snippets (80 chars max)
+dynalist-archive search "topic" --json | jq '.results[] | {node_id, document, snippet: .content[:80]}'
+
+# Just IDs and documents
+dynalist-archive search "topic" --json | jq '.results[] | {node_id, document}'
+
+# Total count only
+dynalist-archive search "topic" --json | jq '.total'
 ```
 
 ### Import/Update Archive
@@ -94,6 +126,7 @@ Dynalist documents are tree-structured outlines:
 - Each **node** has: content, optional note, children, creation/modification timestamps
 - Nodes have a **path** (materialized path like `/root/abc123/def456`) for tree navigation
 - Node IDs are stable and can be used in Dynalist URLs: `https://dynalist.io/d/{file_id}#z={node_id}`
+- Documents can be referenced by title, filename, or file_id
 
 ## FTS5 Query Syntax
 
@@ -107,8 +140,12 @@ Words with 3+ characters automatically get prefix matching.
 
 ## Tips
 
-- Use `--json` for structured output when piping to `jq`
+- **Agents MUST use `--json`** on every command for structured, parseable output
 - Use `--max-depth 1` or `2` to preview large subtrees without overwhelming output
-- Node IDs from search results can be used with `read` command
+- Node IDs from search results can be used with the `read` command
 - The archive auto-imports on MCP server startup when source files have changed
 - Documents can be referenced by title, filename, or file_id
+
+## Reference
+
+See [schema.md](./schema.md) for full JSON output schemas.
