@@ -213,6 +213,114 @@ def read(
 
 
 @app.command()
+def edit(
+    node_id: str = typer.Argument(..., help="Node ID to edit"),
+    document: Annotated[
+        str,
+        typer.Option("--document", "-D", help="Document title/filename/file_id"),
+    ] = ...,
+    content: Annotated[
+        str | None,
+        typer.Option("--content", "-c", help="New content text"),
+    ] = None,
+    note: Annotated[
+        str | None,
+        typer.Option("--note", "-N", help="New note text"),
+    ] = None,
+    checked: Annotated[
+        bool | None,
+        typer.Option("--checked", help="New checked state"),
+    ] = None,
+    data_dir: Annotated[
+        Path | None,
+        typer.Option("--data-dir", "-d", help="Archive database directory"),
+    ] = None,
+    output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+) -> None:
+    """Edit a node's content, note, or checked state."""
+    import json as json_mod
+
+    from dynalist_export.mcp.server import dynalist_edit_node
+
+    conn = _open_db(data_dir)
+    try:
+        result = dynalist_edit_node(
+            conn,
+            node_id=node_id,
+            document=document,
+            content=content,
+            note=note,
+            checked=checked,
+        )
+        if output_json:
+            typer.echo(json_mod.dumps(result, indent=2))
+        elif result.get("success"):
+            typer.echo(f"Edited node {node_id}")
+        else:
+            typer.echo(result.get("error", "Edit failed."))
+            raise typer.Exit(1)
+    finally:
+        conn.close()
+
+
+@app.command()
+def add(
+    parent_id: str = typer.Argument(..., help="Parent node ID"),
+    document: Annotated[
+        str,
+        typer.Option("--document", "-D", help="Document title/filename/file_id"),
+    ] = ...,
+    content: Annotated[
+        str,
+        typer.Option("--content", "-c", help="Content for the new node"),
+    ] = ...,
+    note: Annotated[
+        str | None,
+        typer.Option("--note", "-N", help="Note text"),
+    ] = None,
+    index: Annotated[
+        int,
+        typer.Option("--index", "-i", help="Position among siblings (-1 = last)"),
+    ] = -1,
+    checked: Annotated[
+        bool | None,
+        typer.Option("--checked", help="Checked state"),
+    ] = None,
+    data_dir: Annotated[
+        Path | None,
+        typer.Option("--data-dir", "-d", help="Archive database directory"),
+    ] = None,
+    output_json: bool = typer.Option(False, "--json", "-j", help="Output as JSON"),
+) -> None:
+    """Add a new child node under an existing parent."""
+    import json as json_mod
+
+    from dynalist_export.mcp.server import dynalist_add_node
+
+    conn = _open_db(data_dir)
+    try:
+        result = dynalist_add_node(
+            conn,
+            parent_id=parent_id,
+            document=document,
+            content=content,
+            note=note,
+            index=index,
+            checked=checked,
+        )
+        if output_json:
+            typer.echo(json_mod.dumps(result, indent=2))
+        elif result.get("success"):
+            new_id = result.get("node_id", "unknown")
+            typer.echo(f"Added node {new_id} under {parent_id}")
+        else:
+            typer.echo(result.get("error", "Add failed."))
+            raise typer.Exit(1)
+    finally:
+        conn.close()
+
+
+@app.command()
 def serve() -> None:
     """Start the MCP server (stdio transport)."""
     from dynalist_export.mcp.server import run_mcp_server

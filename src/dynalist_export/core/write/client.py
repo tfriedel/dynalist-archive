@@ -45,9 +45,8 @@ def edit_node(
     except RuntimeError as e:
         return {"success": False, "error": str(e)}
 
-    success = result.get("results", [False])[0]
-    if not success:
-        return {"success": False, "error": "API reported edit failed."}
+    if result.get("_code") != "Ok":
+        return {"success": False, "error": f"API reported edit failed: {result}"}
 
     _reimport_document(conn, api, document_id)
     return {"success": True, "node_id": node_id}
@@ -92,9 +91,8 @@ def add_node(
     except RuntimeError as e:
         return {"success": False, "error": str(e)}
 
-    success = result.get("results", [False])[0]
-    if not success:
-        return {"success": False, "error": "API reported insert failed."}
+    if result.get("_code") != "Ok":
+        return {"success": False, "error": f"API reported insert failed: {result}"}
 
     new_ids = result.get("new_node_ids", [])
     new_id = new_ids[0] if new_ids else None

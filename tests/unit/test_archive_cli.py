@@ -125,6 +125,44 @@ def test_recent_json_outputs_valid_json(tmp_path: Path) -> None:
     assert "modified" in parsed["results"][0]
 
 
+def test_edit_command_returns_json(tmp_path: Path) -> None:
+    data = _setup_and_import(tmp_path)
+    with patch(
+        "dynalist_export.mcp.server.dynalist_edit_node",
+        return_value={"success": True, "node_id": "a"},
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "edit", "a", "--document", "doc1",
+                "--content", "Updated", "--json", "--data-dir", str(data),
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    parsed = json.loads(result.output)
+    assert parsed["success"] is True
+    assert parsed["node_id"] == "a"
+
+
+def test_add_command_returns_json(tmp_path: Path) -> None:
+    data = _setup_and_import(tmp_path)
+    with patch(
+        "dynalist_export.mcp.server.dynalist_add_node",
+        return_value={"success": True, "node_id": "new123"},
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "add", "root", "--document", "doc1",
+                "--content", "New item", "--json", "--data-dir", str(data),
+            ],
+        )
+    assert result.exit_code == 0, result.output
+    parsed = json.loads(result.output)
+    assert parsed["success"] is True
+    assert parsed["node_id"] == "new123"
+
+
 def test_serve_command_shows_help() -> None:
     result = runner.invoke(app, ["serve", "--help"])
     assert result.exit_code == 0, result.output
