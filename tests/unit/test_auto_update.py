@@ -97,9 +97,7 @@ def test_maybe_auto_update_sets_cooldown_even_on_import_failure(
     assert get_metadata(conn, "last_update_at") is not None
 
 
-def test_run_auto_backup_fetches_from_api(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_run_auto_backup_fetches_from_api(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
 
     class FakeApi:
@@ -148,9 +146,7 @@ def test_run_auto_backup_handles_missing_token(
     run_auto_backup(tmp_path)
 
 
-def test_run_auto_backup_handles_api_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_run_auto_backup_handles_api_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     class FakeApi:
         def __init__(self, *, from_cache: bool = False) -> None:
             pass
