@@ -1,0 +1,90 @@
+"""Tests for the archive CLI."""
+
+import json
+from pathlib import Path
+
+from typer.testing import CliRunner
+
+from dynalist_export.archive_cli import app
+
+runner = CliRunner()
+
+MINIMAL_FILE_LIST = {
+    "_code": "Ok",
+    "root_file_id": "folder1",
+    "files": [
+        {"id": "folder1", "title": "Root", "type": "folder", "children": ["doc1"]},
+        {"id": "doc1", "title": "Test Doc", "type": "document"},
+    ],
+}
+
+MINIMAL_FILENAMES = [
+    {"_path": "_root_file", "id": "folder1"},
+    {"_path": "test-doc", "id": "doc1"},
+]
+
+MINIMAL_DOC = {
+    "file_id": "doc1",
+    "title": "Test Doc",
+    "version": 1,
+    "nodes": [
+        {
+            "id": "root",
+            "content": "Root",
+            "note": "",
+            "created": 1000,
+            "modified": 2000,
+            "children": ["a"],
+        },
+        {"id": "a", "content": "Hello", "note": "", "created": 1001, "modified": 2001},
+    ],
+}
+
+
+def test_import_command_creates_database(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    source.mkdir()
+    data = tmp_path / "data"
+
+    (source / "_raw_list.json").write_text(json.dumps(MINIMAL_FILE_LIST))
+    (source / "_raw_filenames.json").write_text(json.dumps(MINIMAL_FILENAMES))
+    (source / "test-doc.c.json").write_text(json.dumps(MINIMAL_DOC))
+
+    result = runner.invoke(app, ["import", "--source-dir", str(source), "--data-dir", str(data)])
+    assert result.exit_code == 0, result.output
+    assert (data / "archive.db").exists()
+
+
+def _setup_and_import(tmp_path: Path) -> Path:
+    """Helper: create source, import, return data dir."""
+    source = tmp_path / "source"
+    source.mkdir()
+    data = tmp_path / "data"
+
+    (source / "_raw_list.json").write_text(json.dumps(MINIMAL_FILE_LIST))
+    (source / "_raw_filenames.json").write_text(json.dumps(MINIMAL_FILENAMES))
+    (source / "test-doc.c.json").write_text(json.dumps(MINIMAL_DOC))
+
+    result = runner.invoke(app, ["import", "--source-dir", str(source), "--data-dir", str(data)])
+    assert result.exit_code == 0
+    return data
+
+
+def test_search_command_returns_results(tmp_path: Path) -> None:
+    data = _setup_and_import(tmp_path)
+    result = runner.invoke(app, ["search", "Hello", "--data-dir", str(data)])
+    assert result.exit_code == 0, result.output
+    assert "Hello" in result.output
+
+
+def test_documents_command_lists_documents(tmp_path: Path) -> None:
+    data = _setup_and_import(tmp_path)
+    result = runner.invoke(app, ["documents", "--data-dir", str(data)])
+    assert result.exit_code == 0, result.output
+    assert "Test Doc" in result.output
+
+
+def test_serve_command_shows_help() -> None:
+    result = runner.invoke(app, ["serve", "--help"])
+    assert result.exit_code == 0, result.output
+    assert "MCP" in result.output or "server" in result.output.lower()

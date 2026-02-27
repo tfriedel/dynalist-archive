@@ -18,5 +18,14 @@ DATA_DIRECTORIES: list[Path] = [
     Path("/tmp/dynalist-export"),
 ]
 
+
+def resolve_data_directory() -> Path:
+    """Return the first DATA_DIRECTORIES entry that exists on disk."""
+    for candidate in DATA_DIRECTORIES:
+        if candidate.is_dir():
+            return candidate
+    return DATA_DIRECTORIES[0]
+
+
 # Cache directory, used only when --cache is passed.
 API_CACHE_PREFIX: str = "/tmp/dynalist-backup-cache/cache-"

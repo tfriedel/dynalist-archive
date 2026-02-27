@@ -7,7 +7,35 @@ from pathlib import Path
 from dynalist_export.api import DynalistApi
 from dynalist_export.config import DATA_DIRECTORIES
 from dynalist_export.downloader import Downloader
+from dynalist_export.protocols import ApiProtocol
 from dynalist_export.writer import FileWriter
+
+
+def run_backup(
+    writer: FileWriter,
+    api: ApiProtocol,
+    *,
+    skip_clean: bool = False,
+    commit: bool = False,
+) -> None:
+    """Execute the backup pipeline.
+
+    Args:
+        writer: File writer for the output directory.
+        api: API client for fetching Dynalist data.
+        skip_clean: If True, do not delete old files.
+        commit: If True, create a git commit after syncing.
+    """
+    if commit:
+        writer.check_git()
+
+    downloader = Downloader(writer)
+    downloader.sync_all(api)
+
+    writer.finalize(delete_others=not skip_clean)
+
+    if commit:
+        writer.git_commit(dry_run=writer.dry_run)
 
 
 def main() -> None:
@@ -45,15 +73,5 @@ def main() -> None:
             raise RuntimeError(msg)
 
     writer = FileWriter(data_dir, dry_run=args.dry_run)
-    if args.commit:
-        writer.check_git()
-
-    downloader = Downloader(writer)
-
     api = DynalistApi(from_cache=args.cache)
-    downloader.sync_all(api)
-
-    writer.finalize(delete_others=not args.skip_clean)
-
-    if args.commit:
-        writer.git_commit(dry_run=args.dry_run)
+    run_backup(writer, api, skip_clean=args.skip_clean, commit=args.commit)
