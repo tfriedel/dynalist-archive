@@ -6,11 +6,16 @@ readme = "README.md"
 authors = [{ name = "Thomas Friedel", email = "thomas.friedel@gmail.com" }]
 requires-python = ">=3.13"
 dependencies = [
+    "loguru>=0.7.0",
+    "mcp[cli]>=1.9.0",
     "requests>=2.32.5",
+    "rich>=14.2.0",
+    "typer>=0.21.1",
 ]
 
 [project.scripts]
 dynalist-backup = "dynalist_export.cli:main"
+dynalist-archive = "dynalist_export.archive_cli:app"
 
 [build-system]
 requires = ["hatchling", "uv-dynamic-versioning"]
@@ -97,6 +102,7 @@ unfixable = [
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+"src/dynalist_export/mcp/server.py" = ["RUF029", "D417"]  # MCP SDK requires async; conn/ctx is infrastructure
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
