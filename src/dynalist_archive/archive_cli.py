@@ -193,13 +193,13 @@ def read(
     conn = _open_db(data_dir)
     try:
         maybe_auto_update(conn, _DEFAULT_SOURCE_DIR)
-        output_format = "json" if output_json else "markdown"
+        fmt = "json" if output_json else "markdown"
         result = dynalist_read_node(
             conn,
             node_id=node_id,
             document=document,
             max_depth=max_depth,
-            output_format=output_format,
+            response_format=fmt,
         )
         if "error" in result:
             typer.echo(result["error"])

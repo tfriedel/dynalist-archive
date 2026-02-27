@@ -25,6 +25,30 @@ def test_dynalist_search_returns_results_with_metadata(
     assert "url" in first
 
 
+def test_dynalist_search_without_subtree_excludes_subtree_field(
+    populated_db: sqlite3.Connection,
+) -> None:
+    """With subtree_depth=0, results should not contain a subtree field."""
+    result = dynalist_search(populated_db, query="python", subtree_depth=0)
+    assert result["count"] >= 1
+    for r in result["results"]:
+        assert "subtree" not in r
+
+
+def test_dynalist_search_with_subtree_includes_children(
+    populated_db: sqlite3.Connection,
+) -> None:
+    """With subtree_depth=2, results include rendered subtree with children."""
+    result = dynalist_search(populated_db, query="python scripting", subtree_depth=2)
+    # Find the "Python is great for scripting" result (n1, which has child n1a)
+    n1_result = next(r for r in result["results"] if r["node_id"] == "n1")
+    assert "subtree" in n1_result
+    assert "FastAPI" in n1_result["subtree"]  # child n1a content
+    assert isinstance(n1_result["subtree_estimated_tokens"], int)
+    assert n1_result["subtree_estimated_tokens"] > 0
+    assert "total_estimated_tokens" in result
+
+
 def test_dynalist_list_documents_returns_all_docs(
     populated_db: sqlite3.Connection,
 ) -> None:
@@ -50,7 +74,7 @@ def test_dynalist_read_node_json_includes_recursive_children(
 ) -> None:
     """JSON format should include nested children up to max_depth."""
     result = dynalist_read_node(
-        populated_db, node_id="root", document="doc1", output_format="json", max_depth=2
+        populated_db, node_id="root", document="doc1", response_format="json", max_depth=2
     )
     assert "error" not in result
     # Root's children should be present
@@ -67,7 +91,7 @@ def test_dynalist_read_node_json_truncates_at_max_depth(
 ) -> None:
     """At max_depth boundary, nodes have child_count but no children key."""
     result = dynalist_read_node(
-        populated_db, node_id="root", document="doc1", output_format="json", max_depth=1
+        populated_db, node_id="root", document="doc1", response_format="json", max_depth=1
     )
     assert "error" not in result
     n1 = next(c for c in result["children"] if c["id"] == "n1")
@@ -85,6 +109,15 @@ def test_dynalist_get_recent_changes_returns_results(
     assert "node_id" in first
     assert "modified" in first
     assert "url" in first
+
+
+def test_dynalist_search_unknown_document_suggests_list_documents(
+    populated_db: sqlite3.Connection,
+) -> None:
+    """Error for unknown document should guide the LLM to list_documents."""
+    result = dynalist_search(populated_db, query="python", document="nonexistent")
+    assert "error" in result
+    assert "dynalist_list_documents" in result["error"]
 
 
 def test_dynalist_get_node_context_returns_structure(
