@@ -8,6 +8,7 @@ import typer
 from loguru import logger
 
 from dynalist_export.config import resolve_data_directory
+from dynalist_export.core.auto_update import maybe_auto_update
 from dynalist_export.core.database.schema import migrate_schema
 from dynalist_export.core.importer.loader import import_source_dir
 from dynalist_export.core.search.searcher import search_nodes
@@ -100,6 +101,7 @@ def search(
 
     conn = _open_db(data_dir)
     try:
+        maybe_auto_update(conn, _DEFAULT_SOURCE_DIR)
         if output_json:
             result = dynalist_search(
                 conn, query=query, document=document, below_node=below, limit=limit
@@ -151,6 +153,7 @@ def documents(
 
     conn = _open_db(data_dir)
     try:
+        maybe_auto_update(conn, _DEFAULT_SOURCE_DIR)
         if output_json:
             result = dynalist_list_documents(conn)
             typer.echo(json_mod.dumps(result, indent=2))
@@ -189,6 +192,7 @@ def read(
 
     conn = _open_db(data_dir)
     try:
+        maybe_auto_update(conn, _DEFAULT_SOURCE_DIR)
         output_format = "json" if output_json else "markdown"
         result = dynalist_read_node(
             conn,
@@ -236,6 +240,7 @@ def recent(
 
     conn = _open_db(data_dir)
     try:
+        maybe_auto_update(conn, _DEFAULT_SOURCE_DIR)
         if output_json:
             result = dynalist_get_recent_changes(conn, document=document, limit=limit)
             if "error" in result:

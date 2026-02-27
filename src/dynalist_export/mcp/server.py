@@ -13,6 +13,7 @@ from loguru import logger
 from mcp.server.fastmcp import Context, FastMCP
 
 from dynalist_export.config import resolve_data_directory
+from dynalist_export.core.auto_update import maybe_auto_update
 from dynalist_export.core.database.schema import migrate_schema
 from dynalist_export.core.search.searcher import search_nodes
 from dynalist_export.core.tree.markdown import render_subtree_as_markdown
@@ -541,6 +542,12 @@ def _ctx(mcp_ctx: Context) -> ServerContext:
     return mcp_ctx.request_context.lifespan_context  # type: ignore[return-value]
 
 
+def _auto_update(ctx: ServerContext) -> None:
+    """Run auto-update if enough time has elapsed."""
+    if ctx.source_dir:
+        maybe_auto_update(ctx.conn, ctx.source_dir)
+
+
 # --- MCP Tool Wrappers ---
 
 
@@ -575,6 +582,7 @@ async def dynalist_search_tool(
         offset: Pagination offset.
         response_format: "concise" or "detailed".
     """
+    _auto_update(_ctx(ctx))
     return dynalist_search(
         _ctx(ctx).conn,
         query=query,
@@ -609,6 +617,7 @@ async def dynalist_read_node_tool(
         output_format: "markdown" (human-readable) or "json" (structured).
         include_notes: Include node notes in output.
     """
+    _auto_update(_ctx(ctx))
     return dynalist_read_node(
         _ctx(ctx).conn,
         node_id=node_id,
@@ -625,6 +634,7 @@ async def dynalist_list_documents_tool(ctx: Context) -> dict[str, Any]:
 
     Use this to discover document names for filtering searches.
     """
+    _auto_update(_ctx(ctx))
     return dynalist_list_documents(_ctx(ctx).conn)
 
 
@@ -648,6 +658,7 @@ async def dynalist_get_recent_changes_tool(
         offset: Pagination offset.
         include_breadcrumbs: Include ancestor chain.
     """
+    _auto_update(_ctx(ctx))
     return dynalist_get_recent_changes(
         _ctx(ctx).conn,
         document=document,
@@ -677,6 +688,7 @@ async def dynalist_get_node_context_tool(
         sibling_count: Siblings before/after to include.
         child_limit: Max direct children to show.
     """
+    _auto_update(_ctx(ctx))
     return dynalist_get_node_context(
         _ctx(ctx).conn,
         node_id=node_id,
