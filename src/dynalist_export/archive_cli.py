@@ -96,41 +96,26 @@ def search(
     """Search for nodes matching a query."""
     import json as json_mod
 
+    from dynalist_export.mcp.server import dynalist_search
+
     conn = _open_db(data_dir)
     try:
-        # Resolve document name to ID if needed
-        doc_id: str | None = None
-        if document:
-            row = conn.execute(
-                "SELECT file_id FROM documents WHERE title = ? OR file_id = ? OR filename = ?",
-                (document, document, document),
-            ).fetchone()
-            if row:
-                doc_id = row[0]
-            else:
-                typer.echo(f"Document '{document}' not found.")
-                raise typer.Exit(1)
-
-        results, total = search_nodes(
-            conn, query=query, document_id=doc_id, below_node_path=below, limit=limit
-        )
-
         if output_json:
-            data = {
-                "results": [
-                    {
-                        "node_id": r.node.id,
-                        "document": r.document_title,
-                        "content": r.node.content,
-                        "snippet": r.snippet,
-                        "path": r.node.path,
-                    }
-                    for r in results
-                ],
-                "total": total,
-            }
-            typer.echo(json_mod.dumps(data, indent=2))
+            result = dynalist_search(
+                conn, query=query, document=document, below_node=below, limit=limit
+            )
+            if "error" in result:
+                typer.echo(result["error"])
+                raise typer.Exit(1)
+            typer.echo(json_mod.dumps(result, indent=2))
         else:
+            results, total = search_nodes(
+                conn,
+                query=query,
+                document_id=_resolve_document_id(conn, document) if document else None,
+                below_node_path=below,
+                limit=limit,
+            )
             typer.echo(f"Found {total} results (showing {len(results)}):\n")
             for r in results:
                 typer.echo(f"  [{r.document_title}] {r.node.content[:80]}")
