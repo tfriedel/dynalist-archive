@@ -6,8 +6,7 @@ import logging
 import re
 from typing import Any
 
-from dynalist_export.api import DynalistApi
-from dynalist_export.writer import FileWriter
+from dynalist_export.protocols import ApiProtocol, WriterProtocol
 
 
 class Downloader:
@@ -16,7 +15,7 @@ class Downloader:
     Assigns names to each record, too.
     """
 
-    def __init__(self, writer: FileWriter) -> None:
+    def __init__(self, writer: WriterProtocol) -> None:
         self._writer = writer
         self.logger = logging.getLogger("downloader")
 
@@ -27,7 +26,7 @@ class Downloader:
         # Output: document contents. Map filename -> api(doc/read) objects.
         self.doc_contents: dict[str, dict[str, Any]] | None = None
 
-    def sync_all(self, api: DynalistApi) -> None:
+    def sync_all(self, api: ApiProtocol) -> None:
         """Sync all raw data to the local directory."""
         raw_file_list = self._sync_file_list(api)
         versions_info = self._get_versions_info(api, raw_file_list)
@@ -37,7 +36,7 @@ class Downloader:
 
         self._make_processed_files(self.doc_contents)
 
-    def _sync_file_list(self, api: DynalistApi) -> dict[str, Any]:
+    def _sync_file_list(self, api: ApiProtocol) -> dict[str, Any]:
         """Update file list, generate name for each file.
 
         Returns:
@@ -53,7 +52,7 @@ class Downloader:
         self._writer.make_data_file("_raw_list.json", data=files)
         return files
 
-    def _get_versions_info(self, api: DynalistApi, files: dict[str, Any]) -> dict[str, int]:
+    def _get_versions_info(self, api: ApiProtocol, files: dict[str, Any]) -> dict[str, int]:
         # Augment data with version numbers -- we fetch version for each document right away.
         all_file_ids = sorted(x["id"] for x in files["files"] if x["type"] != "folder")
         versions = api.call("doc/check_for_updates", {"file_ids": all_file_ids})
@@ -130,7 +129,7 @@ class Downloader:
 
     def _get_contents(
         self,
-        api: DynalistApi,
+        api: ApiProtocol,
         file_index: list[dict[str, Any]],
         versions_info: dict[str, int],
     ) -> dict[str, dict[str, Any]]:
