@@ -134,8 +134,15 @@ def test_edit_command_returns_json(tmp_path: Path) -> None:
         result = runner.invoke(
             app,
             [
-                "edit", "a", "--document", "doc1",
-                "--content", "Updated", "--json", "--data-dir", str(data),
+                "edit",
+                "a",
+                "--document",
+                "doc1",
+                "--content",
+                "Updated",
+                "--json",
+                "--data-dir",
+                str(data),
             ],
         )
     assert result.exit_code == 0, result.output
@@ -153,8 +160,15 @@ def test_add_command_returns_json(tmp_path: Path) -> None:
         result = runner.invoke(
             app,
             [
-                "add", "root", "--document", "doc1",
-                "--content", "New item", "--json", "--data-dir", str(data),
+                "add",
+                "root",
+                "--document",
+                "doc1",
+                "--content",
+                "New item",
+                "--json",
+                "--data-dir",
+                str(data),
             ],
         )
     assert result.exit_code == 0, result.output
