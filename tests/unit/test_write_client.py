@@ -10,7 +10,7 @@ def test_edit_node_calls_api_and_returns_success(
     populated_db: sqlite3.Connection,
 ) -> None:
     mock_api = MagicMock()
-    mock_api.call.return_value = {"_code": "Ok", "results": [True]}
+    mock_api.call.return_value = {"_code": "Ok"}
 
     result = edit_node(
         populated_db,
@@ -36,7 +36,6 @@ def test_add_node_calls_api_and_returns_new_id(
     mock_api = MagicMock()
     mock_api.call.return_value = {
         "_code": "Ok",
-        "results": [True],
         "new_node_ids": ["new123"],
     }
 
