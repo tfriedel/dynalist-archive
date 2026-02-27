@@ -1,4 +1,4 @@
-"""Auto-update logic: re-import changed files from disk before search."""
+"""Auto-update logic: fetch from API and re-import before search."""
 
 import sqlite3
 import time
@@ -6,8 +6,11 @@ from pathlib import Path
 
 from loguru import logger
 
+from dynalist_export.api import DynalistApi
 from dynalist_export.config import AUTO_UPDATE_INTERVAL
 from dynalist_export.core.database.schema import get_metadata, set_metadata
+from dynalist_export.downloader import Downloader
+from dynalist_export.writer import FileWriter
 
 
 def is_update_needed(conn: sqlite3.Connection, interval: int) -> bool:
@@ -26,17 +29,33 @@ def is_update_needed(conn: sqlite3.Connection, interval: int) -> bool:
     return (time.time() - int(last_update)) >= interval
 
 
-def maybe_auto_update(conn: sqlite3.Connection, source_dir: Path) -> None:
-    """Re-import changed .c.json files from disk if cooldown has expired.
+def run_auto_backup(source_dir: Path) -> None:
+    """Fetch fresh data from the Dynalist API and write .c.json files to disk.
 
-    Does not make API calls; use ``dynalist-backup`` to sync from the
-    Dynalist API to disk first.
+    Silently returns on any failure (missing token, API errors, etc.)
+    so the caller can continue with existing on-disk data.
+    """
+    try:
+        api = DynalistApi(from_cache=False)
+        writer = FileWriter(source_dir, dry_run=False)
+        downloader = Downloader(writer)
+        downloader.sync_all(api)
+        writer.finalize(delete_others=False)
+    except Exception:
+        logger.warning("Auto-backup from API failed, continuing with existing data", exc_info=True)
+
+
+def maybe_auto_update(conn: sqlite3.Connection, source_dir: Path) -> None:
+    """Fetch fresh data from the Dynalist API and re-import into the archive.
+
+    When the cooldown has expired, fetches updated documents from the
+    Dynalist API to disk, then re-imports changed .c.json files into SQLite.
 
     Skips without blocking if:
     - The cooldown has not expired.
     - The source directory does not exist.
 
-    On import failure, logs a warning and sets the cooldown to prevent
+    On failure, logs a warning and sets the cooldown to prevent
     retry storms.
 
     Args:
@@ -48,6 +67,8 @@ def maybe_auto_update(conn: sqlite3.Connection, source_dir: Path) -> None:
 
     if not source_dir.exists():
         return
+
+    run_auto_backup(source_dir)
 
     try:
         from dynalist_export.core.importer.loader import import_source_dir
