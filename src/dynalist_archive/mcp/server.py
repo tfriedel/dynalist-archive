@@ -543,7 +543,30 @@ async def server_lifespan(_server: FastMCP) -> AsyncIterator[ServerContext]:
         conn.close()
 
 
-mcp_server = FastMCP("dynalist-archive", lifespan=server_lifespan)
+mcp_server = FastMCP(
+    "dynalist-archive",
+    instructions="""\
+Dynalist is a tree-structured outliner. Search results show matching nodes, but
+the real content is usually in the **children** underneath them.
+
+## Best Practice: Always Read Subtrees After Searching
+
+1. Search with dynalist_search_tool to find relevant nodes.
+2. For EACH interesting result, call dynalist_read_node_tool with its node_id
+   to retrieve the full subtree (children, grandchildren, etc.).
+3. Use max_depth=2 or 3 for large subtrees to avoid overwhelming output.
+
+Search results only contain the matched node's content — they do NOT include
+children. A node titled "monorepo" may have 10 child links and notes that only
+appear when you read its subtree.
+
+## Tips
+- Read multiple search results, not just the first one.
+- Use dynalist_get_node_context_tool to see siblings and position in the tree.
+- Breadcrumbs show the ancestor path (e.g. "peat > archive > monorepo").
+""",
+    lifespan=server_lifespan,
+)
 
 
 def _ctx(mcp_ctx: Context) -> ServerContext:
@@ -581,10 +604,13 @@ async def dynalist_search_tool(
     Use "quoted phrases" for exact matches. Prefix matching is automatic
     for 3+ char words.
 
-    Pagination: When has_more is true, use next_offset in a follow-up call.
+    IMPORTANT: Dynalist is a tree-structured outliner. Search results only
+    contain the matched node's own text — child nodes are NOT included.
+    The real content is often in the children underneath a match. You MUST
+    call dynalist_read_node_tool on each interesting result's node_id to
+    retrieve the full subtree. Use max_depth=2 or 3 for large subtrees.
 
-    Follow-up: Use dynalist_get_node_context or dynalist_read_node with
-    a node_id from results to see the full context.
+    Pagination: When has_more is true, use next_offset in a follow-up call.
 
     Args:
         query: Search text.
