@@ -120,12 +120,12 @@ def dynalist_search(
             "node_id": r.node.id,
             "document": r.document_title,
             "content": r.node.content if response_format == "detailed" else r.node.content[:120],
+            "note": r.node.note,
             "snippet": r.snippet,
             "url": _build_url(r.node.document_id, r.node.id),
             "modified": datetime.fromtimestamp(r.node.modified / 1000, tz=UTC).isoformat(),
         }
         if response_format == "detailed":
-            entry["note"] = r.node.note
             entry["path"] = r.node.path
             entry["depth"] = r.node.depth
         if include_breadcrumbs:

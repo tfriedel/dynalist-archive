@@ -46,6 +46,7 @@ Reference documentation for `dynalist-archive` JSON output formats.
       "node_id": "xyz789",
       "document": "My Notes",
       "content": "First 120 chars of content...",
+      "note": "Optional note/annotation text",
       "snippet": "...matching text with context...",
       "url": "https://dynalist.io/d/abc123#z=xyz789",
       "modified": "2024-01-22T14:30:00+00:00",
@@ -66,6 +67,7 @@ Reference documentation for `dynalist-archive` JSON output formats.
 | `node_id`     | string | Unique node identifier                    |
 | `document`    | string | Document title containing this node       |
 | `content`     | string | First 120 characters of node content      |
+| `note`        | string | Note/annotation text (empty string if none)|
 | `snippet`     | string | Text excerpt around the match             |
 | `url`         | string | Dynalist permalink                        |
 | `modified`    | string | ISO 8601 modification timestamp           |
